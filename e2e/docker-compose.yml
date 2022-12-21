@@ -1,0 +1,55 @@
+version: '3.4'
+
+services:
+  testchain:
+    image: tendermint/gaia:v4.2.0
+    restart: always
+    user: root
+    volumes:
+      - ./scripts:/home
+      - chain-home:/data/chain
+    command:
+      - /bin/sh
+      - -c
+      - |
+        echo "start run single node."
+        /home/init_chain.sh
+    ports:
+      - 26656:26656
+      - 26657:26657
+      - 1317:1317
+      - 9090:9090
+      - 9091:9091
+  flood:
+    image: tendermint/gaia:v4.2.0
+    restart: always
+    user: root
+    volumes:
+      - ./scripts:/gaia
+      - chain-home:/data/chain
+    command:
+      - /bin/sh
+      - -c
+      - |
+        sleep 10;
+        
+        /gaia/flood.sh
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    restart: always
+    user: postgres
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: "cosmscan"
+      POSTGRES_PASSWORD: "cosmscan"
+    volumes:
+      - ./scripts/postgres:/docker-entrypoint-init.d/
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8082:8080"
+volumes:
+  chain-home:
