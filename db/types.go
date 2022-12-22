@@ -2,25 +2,25 @@ package db
 
 type Writer interface {
 	// InsertChain inserts a chain information into the database.
-	InsertChain(chainID string) error
+	InsertChain(chain *Chain) (int64, error)
 
 	// InsertBlock inserts the given block into the database.
-	InsertBlock(block *Block) error
+	InsertBlock(block *Block) (int64, error)
 
 	// InsertTransaction inserts the given transaction into the database.
-	InsertTransaction(tx *Transaction) error
+	InsertTransaction(tx *Transaction) (int64, error)
 
 	// InsertEvent inserts the given event into the database.
-	InsertEvent(event *Event) error
+	InsertEvent(event *Event) (int64, error)
 
 	// InsertAccount inserts the given account into the database.
-	InsertAccount(account *Account) error
+	InsertAccount(account *Account) (int64, error)
 
 	// InsertMessage inserts the given message into the database.
-	InsertMessage(message *Message) error
+	InsertMessage(message *Message) (int64, error)
 
 	// InsertOrUpdateAccountBalance inserts or updates the given account balance into the database.
-	InsertOrUpdateAccountBalance(accountBalance *AccountBalance) error
+	InsertOrUpdateAccountBalance(accountBalance *AccountBalance) (int64, error)
 }
 
 type BlockReader interface {
