@@ -10,3 +10,6 @@ build:
 
 test:
 	@go test -mod=readonly $(PACKAGES_UNIT)
+
+run:
+	$(GORUN) ./cmd/cosmscan/main.go --config-file ./config.yml

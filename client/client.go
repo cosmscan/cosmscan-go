@@ -48,7 +48,7 @@ func NewClient(cfg *Config) (*Client, error) {
 }
 
 func NewRPCClient(address string) (*rpchttp.HTTP, error) {
-	rpcClient, err := rpchttp.New(address)
+	rpcClient, err := rpchttp.New(address, "/websocket")
 	if err != nil {
 		return nil, err
 	}
