@@ -10,7 +10,34 @@ import (
 func (p *PsqlDB) Block(ctx context.Context, height db.BlockHeight) (*db.Block, error) {
 	var block db.Block
 
-	sql, args, err := sq.Select("*").From("blocks").Where(sq.Eq{"height": height}).ToSql()
+	sql, args, err := sq.Select("*").
+		From("blocks").
+		Where(sq.Eq{"height": height}).
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	row, err := p.pool.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := pgxscan.ScanOne(&block, row); err != nil {
+		return nil, err
+	}
+
+	return &block, nil
+}
+
+func (p *PsqlDB) LatestBlock(ctx context.Context) (*db.Block, error) {
+	var block db.Block
+
+	sql, args, err := sq.Select("*").
+		From("blocks").
+		OrderBy("height desc").
+		Limit(1).
+		ToSql()
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +57,10 @@ func (p *PsqlDB) Block(ctx context.Context, height db.BlockHeight) (*db.Block, e
 func (p *PsqlDB) BlockByHash(ctx context.Context, hash string) (*db.Block, error) {
 	var block db.Block
 
-	sql, args, err := sq.Select("*").From("blocks").Where(sq.Eq{"block_hash": hash}).ToSql()
+	sql, args, err := sq.Select("*").
+		From("blocks").
+		Where(sq.Eq{"block_hash": hash}).
+		ToSql()
 	if err != nil {
 		return nil, err
 	}

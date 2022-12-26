@@ -28,6 +28,9 @@ type BlockReader interface {
 
 	// BlockByHash returns the block with the given hash.
 	BlockByHash(ctx context.Context, hash string) (*Block, error)
+
+	// LatestBlock returns the latest saved block in the database
+	LatestBlock(ctx context.Context) (*Block, error)
 }
 
 type TransactionReader interface {

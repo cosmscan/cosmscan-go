@@ -5,6 +5,8 @@ import (
 	"cosmscan-go/client"
 	"cosmscan-go/db"
 	"cosmscan-go/db/psqldb"
+	"errors"
+	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 	"time"
 )
@@ -49,7 +51,10 @@ func (i *Indexer) Run(ctx context.Context) error {
 }
 
 func (i *Indexer) run(ctx context.Context) error {
-	current := i.pickCurrentBlock()
+	current, err := i.pickCurrentBlock()
+	if err != nil {
+		return err
+	}
 	i.log.Infow("start indexing", "start_block", current)
 
 	for {
@@ -81,6 +86,14 @@ func (i *Indexer) run(ctx context.Context) error {
 	}
 }
 
-func (i *Indexer) pickCurrentBlock() db.BlockHeight {
-	return db.BlockHeight(i.cfg.StartBlock)
+func (i *Indexer) pickCurrentBlock() (db.BlockHeight, error) {
+	block, err := i.storage.LatestBlock(context.Background())
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return db.BlockHeight(i.cfg.StartBlock), nil
+		}
+		i.log.Errorw("failed to query latest block on the storage", "err", err)
+		return 0, err
+	}
+	return block.Height, nil
 }
