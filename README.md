@@ -19,7 +19,7 @@ Cosmscan is here to solve this problem. 🚀🚀
 - Easy installation and configuration
 
 ## Docs
-
+- [System Design](./docs/design.md)
 
 ## Contribution
 If you are interested in contributing to this project,
