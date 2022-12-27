@@ -18,6 +18,9 @@ Cosmscan is here to solve this problem. 🚀🚀
 - Support default useful queries with `gRPC` / `HTTP 2.0`
 - Easy installation and configuration
 
+## Docs
+
+
 ## Contribution
 If you are interested in contributing to this project,
 Please feel free to open issue or pull request.
