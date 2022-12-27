@@ -3,6 +3,7 @@ package psqldb
 import (
 	"context"
 	"cosmscan-go/db"
+
 	sq "github.com/Masterminds/squirrel"
 )
 

@@ -48,7 +48,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-      - ./scripts/postgres:/docker-entrypoint-init.d/
+      - ./scripts/postgres/:/docker-entrypoint-initdb.d/
   adminer:
     image: adminer
     restart: always

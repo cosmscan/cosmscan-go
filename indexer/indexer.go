@@ -6,9 +6,10 @@ import (
 	"cosmscan-go/db"
 	"cosmscan-go/db/psqldb"
 	"errors"
+	"time"
+
 	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
-	"time"
 )
 
 type Indexer struct {
@@ -63,12 +64,12 @@ func (i *Indexer) run(ctx context.Context) error {
 			i.log.Infow("indexer is stopped at", "block", current)
 			return nil
 		default:
-			status, err := i.cli.Status(ctx)
+			latestHeight, err := i.cli.LatestBlockNumber(ctx)
 			if err != nil {
 				return err
 			}
 
-			latest := db.BlockHeight(status.SyncInfo.LatestBlockHeight)
+			latest := db.BlockHeight(latestHeight)
 			if latest < current {
 				i.log.Debugw("waiting for new block", "current", current, "latest", latest)
 				<-time.After(time.Second * 5)
@@ -80,7 +81,24 @@ func (i *Indexer) run(ctx context.Context) error {
 				return err
 			}
 
-			i.log.Info("got block", "block", block, "height", current)
+			i.log.Info("fetched new block", "height", current, "hash", block.Block.Hash().String())
+
+			for _, tx := range block.Block.Txs {
+				abciTx, err := i.cli.ABCITransactionByHash(ctx, tx.Hash())
+				if err != nil {
+					return err
+				}
+
+				i.log.Info("found new abci tx", "hash", abciTx.Hash.String())
+
+				cosmTx, err := client.TransactionByHash(ctx, string(tx.Hash()), i.cli)
+				if err != nil {
+					return err
+				}
+				i.log.Info("found new cosmos tx", "hash", cosmTx.Tx.String(), "message", cosmTx.TxResponse.Data)
+				i.log.Debug("raw cosmos messages", "message", cosmTx.TxResponse.Logs)
+			}
+
 			current++
 		}
 	}

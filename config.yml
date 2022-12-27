@@ -3,7 +3,7 @@ chain:
   name: cosmos
 db:
   host: localhost
-  port: 6432
+  port: 5432
   user: cosmscan
   password: cosmscan
   database: cosmscan
