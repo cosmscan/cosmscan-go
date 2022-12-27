@@ -81,7 +81,7 @@ func (i *Indexer) run(ctx context.Context) error {
 				return err
 			}
 
-			i.log.Info("fetched new block", "height", current, "hash", block.Block.Hash().String())
+			i.log.Infow("fetched new block", "height", current, "hash", block.Block.Hash().String())
 
 			for _, tx := range block.Block.Txs {
 				abciTx, err := i.cli.ABCITransactionByHash(ctx, tx.Hash())
@@ -89,14 +89,13 @@ func (i *Indexer) run(ctx context.Context) error {
 					return err
 				}
 
-				i.log.Info("found new abci tx", "hash", abciTx.Hash.String())
+				i.log.Infow("found new abci tx", "hash", abciTx.Hash.String())
 
-				cosmTx, err := client.TransactionByHash(ctx, string(tx.Hash()), i.cli)
+				cosmTx, err := client.TransactionByHash(ctx, abciTx.Hash.String(), i.cli)
 				if err != nil {
 					return err
 				}
-				i.log.Info("found new cosmos tx", "hash", cosmTx.Tx.String(), "message", cosmTx.TxResponse.Data)
-				i.log.Debug("raw cosmos messages", "message", cosmTx.TxResponse.Logs)
+				i.log.Infow("found new cosmos tx", "height", cosmTx.TxResponse.RawLog)
 			}
 
 			current++
