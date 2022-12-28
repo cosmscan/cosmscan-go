@@ -5,12 +5,14 @@ import (
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
-type tx struct {
+type CommitBlockChannel chan *msgCommitBlock
+
+type rawTx struct {
 	abci   *coretypes.ResultTx
 	cosmos *txtypes.GetTxResponse
 }
 
-type preCommitBlock struct {
+type msgCommitBlock struct {
 	block *coretypes.ResultBlock
-	txs   []*tx
+	txs   []*rawTx
 }

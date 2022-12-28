@@ -5,18 +5,21 @@ import (
 	"cosmscan-go/client"
 	"cosmscan-go/db"
 	"cosmscan-go/db/psqldb"
+	"cosmscan-go/indexer/fetcher"
 	"errors"
-	"time"
+	"sync"
 
 	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 )
 
 type Indexer struct {
-	log     *zap.SugaredLogger
-	cfg     *Config
-	cli     *client.Client
-	storage db.DB
+	ctx        context.Context
+	cancelFunc context.CancelFunc
+	log        *zap.SugaredLogger
+	cfg        *Config
+	cli        *client.Client
+	storage    db.DB
 }
 
 func NewIndexer(cfg *Config) (*Indexer, error) {
@@ -38,69 +41,64 @@ func NewIndexer(cfg *Config) (*Indexer, error) {
 		return nil, err
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	return &Indexer{
-		log:     zap.S(),
-		cfg:     cfg,
-		cli:     cli,
-		storage: storage,
+		ctx:        ctx,
+		cancelFunc: cancel,
+		log:        zap.S(),
+		cfg:        cfg,
+		cli:        cli,
+		storage:    storage,
 	}, nil
 }
 
-func (i *Indexer) Run(ctx context.Context) error {
-	i.log.Info("started indexer app")
-	return i.run(ctx)
-}
+func (i *Indexer) Run() error {
+	wg := sync.WaitGroup{}
+	i.log.Info("preparing to start indexing")
 
-func (i *Indexer) run(ctx context.Context) error {
 	current, err := i.pickCurrentBlock()
 	if err != nil {
 		return err
 	}
-	i.log.Infow("start indexing", "start_block", current)
 
-	for {
-		select {
-		case <-ctx.Done():
-			i.log.Infow("indexer is stopped at", "block", current)
-			return nil
-		default:
-			latestHeight, err := i.cli.LatestBlockNumber(ctx)
-			if err != nil {
-				return err
-			}
-
-			latest := db.BlockHeight(latestHeight)
-			if latest < current {
-				i.log.Debugw("waiting for new block", "current", current, "latest", latest)
-				<-time.After(time.Second * 5)
-				continue
-			}
-
-			block, err := i.cli.Block(ctx, int64(current))
-			if err != nil {
-				return err
-			}
-
-			i.log.Infow("fetched new block", "height", current, "hash", block.Block.Hash().String())
-
-			for _, tx := range block.Block.Txs {
-				abciTx, err := i.cli.ABCITransactionByHash(ctx, tx.Hash())
-				if err != nil {
-					return err
-				}
-
-				i.log.Infow("found new abci tx", "hash", abciTx.Hash.String())
-
-				cosmTx, err := client.TransactionByHash(ctx, abciTx.Hash.String(), i.cli)
-				if err != nil {
-					return err
-				}
-				i.log.Infow("found new cosmos tx", "height", cosmTx.TxResponse.RawLog)
-			}
-
-			current++
-		}
+	blockFetcher := fetcher.NewBlockFetcher(i.cli, i.storage, current)
+	blockCh, err := blockFetcher.Subscribe()
+	if err != nil {
+		return err
 	}
+
+	// run fetcher
+	wg.Add(1)
+	go func() {
+		i.log.Info("started block fetcher")
+		defer wg.Done()
+		if err := blockFetcher.Run(); err != nil {
+			i.log.Fatalw("failed to run block fetcher", "err", err)
+		}
+		i.Close()
+	}()
+
+	wg.Add(1)
+	go func() {
+		i.log.Info("started committerr")
+		defer wg.Done()
+		i.startCommitter(i.ctx, blockCh)
+		i.Close()
+	}()
+
+	select {
+	case <-i.ctx.Done():
+		i.log.Info("indexer is stopped")
+		blockFetcher.Close()
+	}
+
+	wg.Wait()
+	return nil
+}
+
+func (i *Indexer) Close() {
+	i.cancelFunc()
 }
 
 func (i *Indexer) pickCurrentBlock() (db.BlockHeight, error) {
@@ -109,8 +107,34 @@ func (i *Indexer) pickCurrentBlock() (db.BlockHeight, error) {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return db.BlockHeight(i.cfg.StartBlock), nil
 		}
-		i.log.Errorw("failed to query latest block on the storage", "err", err)
 		return 0, err
 	}
-	return block.Height, nil
+	return block.Height + 1, nil
+}
+
+func (i *Indexer) startCommitter(ctx context.Context, blockCh <-chan *fetcher.FetchedBlock) {
+	commitCh := make(chan *msgCommitBlock, 10)
+
+	// run committer
+	committer := NewCommitter(i.storage)
+	go committer.Run(commitCh)
+
+	for {
+		select {
+		case <-ctx.Done():
+			committer.Close()
+			return
+		case fetchedBlock := <-blockCh:
+			msg := &msgCommitBlock{
+				block: fetchedBlock.Block,
+				txs:   make([]*rawTx, 0),
+			}
+
+			for _, tx := range fetchedBlock.Txs {
+				msg.txs = append(msg.txs, &rawTx{abci: tx.ABCIQueryResult, cosmos: tx.CosmosQueryResult})
+			}
+
+			commitCh <- msg
+		}
+	}
 }

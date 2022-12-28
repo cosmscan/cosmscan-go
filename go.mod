@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	github.com/Masterminds/squirrel v1.5.3
+	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/cosmos/cosmos-sdk v0.46.7
 	github.com/georgysavva/scany/v2 v2.0.0
 	github.com/jackc/pgx/v5 v5.2.0

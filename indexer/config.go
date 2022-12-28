@@ -16,7 +16,6 @@ type Config struct {
 
 type LogConfig struct {
 	Environment string `json:"environment" yaml:"environment"`
-	Level       string `json:"level" yaml:"level"`
 }
 
 type ChainConfig struct {

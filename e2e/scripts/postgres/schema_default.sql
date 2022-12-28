@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS blocks (
 -- transactions --
 CREATE TABLE IF NOT EXISTS transactions (
     id SERIAL PRIMARY KEY,
+    seq INT NOT NULL,
     chain_id INT NOT NULL,
     transaction_hash VARCHAR(256) UNIQUE NOT NULL,
     height BIGINT NOT NULL,

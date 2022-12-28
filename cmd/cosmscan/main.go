@@ -1,14 +1,14 @@
 package main
 
 import (
-	"context"
 	"cosmscan-go/indexer"
 	"cosmscan-go/pkg/env"
 	"errors"
 	"flag"
 	"fmt"
-	"go.uber.org/zap"
 	"syscall"
+
+	"go.uber.org/zap"
 )
 
 var flagConfigFile = flag.String("config-file", "", "path to config file")
@@ -51,7 +51,7 @@ func main() {
 		logger.Error("failed to create indexer app", zap.Error(err))
 	}
 
-	if err := app.Run(context.Background()); err != nil {
+	if err := app.Run(); err != nil {
 		logger.Error("failed to run indexer app", zap.Error(err))
 	}
 }
