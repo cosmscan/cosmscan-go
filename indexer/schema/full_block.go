@@ -68,12 +68,12 @@ func NewFullBlock(block *coretypes.ResultBlock, abciTx []*coretypes.ResultTx, co
 		}
 
 		// fill events
-		for seq, logs := range res.TxResponse.Logs {
-			for _, event := range logs.Events {
+		for _, txLog := range res.TxResponse.Logs {
+			for _, event := range txLog.Events {
 				for _, attr := range event.Attributes {
 					fullTx.Events = append(fullTx.Events, &db.Event{
 						Height:  db.BlockHeight(block.Block.Height),
-						Seq:     seq,
+						Seq:     txLog.MsgIndex,
 						Type:    event.Type,
 						Key:     attr.Key,
 						Value:   attr.Value,

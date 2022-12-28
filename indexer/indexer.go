@@ -6,7 +6,10 @@ import (
 	"cosmscan-go/db"
 	"cosmscan-go/db/psqldb"
 	"cosmscan-go/indexer/fetcher"
+	"cosmscan-go/indexer/schema"
 	"errors"
+	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
+	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 	"sync"
 
 	"github.com/jackc/pgx/v5"
@@ -113,7 +116,7 @@ func (i *Indexer) pickCurrentBlock() (db.BlockHeight, error) {
 }
 
 func (i *Indexer) startCommitter(ctx context.Context, blockCh <-chan *fetcher.FetchedBlock) {
-	commitCh := make(chan *msgCommitBlock, 10)
+	commitCh := make(chan *schema.FullBlock, 10)
 
 	// run committer
 	committer := NewCommitter(i.storage)
@@ -125,16 +128,20 @@ func (i *Indexer) startCommitter(ctx context.Context, blockCh <-chan *fetcher.Fe
 			committer.Close()
 			return
 		case fetchedBlock := <-blockCh:
-			msg := &msgCommitBlock{
-				block: fetchedBlock.Block,
-				txs:   make([]*rawTx, 0),
-			}
+			var abciTx []*coretypes.ResultTx
+			var cosmTx []*txtypes.GetTxResponse
 
 			for _, tx := range fetchedBlock.Txs {
-				msg.txs = append(msg.txs, &rawTx{abci: tx.ABCIQueryResult, cosmos: tx.CosmosQueryResult})
+				abciTx = append(abciTx, tx.ABCIQueryResult)
+				cosmTx = append(cosmTx, tx.CosmosQueryResult)
 			}
 
-			commitCh <- msg
+			fullBlock, err := schema.NewFullBlock(fetchedBlock.Block, abciTx, cosmTx)
+			if err != nil {
+				i.log.Panicw("unexpectedly failed to create full block", "err", err)
+			}
+
+			commitCh <- fullBlock
 		}
 	}
 }

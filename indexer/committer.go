@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
-	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 	"go.uber.org/zap"
 )
 
@@ -30,7 +28,7 @@ func NewCommitter(storage db.DB) *Committer {
 	}
 }
 
-func (c *Committer) Run(blockCh chan *msgCommitBlock) {
+func (c *Committer) Run(blockCh chan *schema.FullBlock) {
 	var cnt int
 	var start db.BlockHeight
 	var end db.BlockHeight
@@ -51,12 +49,12 @@ func (c *Committer) Run(blockCh chan *msgCommitBlock) {
 				// sometimes database is temporarily unavailable, in the future, we need to retry
 				c.log.Fatalw("failed to commit block, this is unexpected behavior", "err", err)
 			}
-			c.log.Debugw("new block committed", "height", block.block.Block.Height)
+			c.log.Debugw("new block committed", "height", block.Block.Height)
 
 			if cnt == 0 {
-				start = db.BlockHeight(block.block.Block.Height)
+				start = block.Block.Height
 			} else {
-				end = db.BlockHeight(block.block.Block.Height)
+				end = block.Block.Height
 			}
 			cnt++
 		}
@@ -67,20 +65,7 @@ func (c *Committer) Close() {
 	c.cancelFunc()
 }
 
-func (c *Committer) commitBlock(block *msgCommitBlock) error {
-	var abciTx []*coretypes.ResultTx
-	var cosmTx []*txtypes.GetTxResponse
-
-	for _, tx := range block.txs {
-		abciTx = append(abciTx, tx.abci)
-		cosmTx = append(cosmTx, tx.cosmos)
-	}
-
-	fullBlock, err := schema.NewFullBlock(block.block, abciTx, cosmTx)
-	if err != nil {
-		return fmt.Errorf("err creating full block: %w", err)
-	}
-
+func (c *Committer) commitBlock(fullBlock *schema.FullBlock) error {
 	if err := c.storage.WithTransaction(c.ctx, func(dbTx db.DB) error {
 		fullBlock.Block.ChainId = 1
 		if _, err := dbTx.InsertBlock(c.ctx, fullBlock.Block); err != nil {

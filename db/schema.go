@@ -70,7 +70,7 @@ type Event struct {
 	ChainId    int          `db:"chain_id"`
 	TxId       int          `db:"tx_id"`
 	Height     BlockHeight  `db:"block_height"`
-	Seq        int          `db:"event_seq"`
+	Seq        uint32       `db:"event_seq"`
 	Type       string       `db:"event_type"`
 	Key        string       `db:"event_key"`
 	Value      string       `db:"event_value"`
