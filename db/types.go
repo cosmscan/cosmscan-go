@@ -1,6 +1,8 @@
 package db
 
-import "context"
+import (
+	"context"
+)
 
 type Writer interface {
 	// InsertChain inserts a chain information into the database.
@@ -54,6 +56,10 @@ type DB interface {
 	TransactionReader
 	EventReader
 	MessageReader
+
+	// WithTransaction executes the given function within a transaction.
+	// if fn returns an error, the transaction is rolled back.
+	WithTransaction(ctx context.Context, fn func(tx DB) error) error
 
 	// Close closes the database, freeing up any available resources.
 	Close() error

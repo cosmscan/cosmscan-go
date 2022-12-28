@@ -2,9 +2,11 @@ package psqldb
 
 import (
 	"context"
+	"cosmscan-go/db"
 	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -20,7 +22,7 @@ type Config struct {
 
 // PsqlDB means Relational Database
 type PsqlDB struct {
-	pool *pgxpool.Pool
+	tx pgx.Tx
 }
 
 func NewPsqlDB(config *Config) (*PsqlDB, error) {
@@ -33,11 +35,40 @@ func NewPsqlDB(config *Config) (*PsqlDB, error) {
 	}
 
 	return &PsqlDB{
-		pool: pool,
+		tx: &connPool{pool},
 	}, nil
 }
 
+func (p *PsqlDB) WithTransaction(ctx context.Context, fn func(tx db.DB) error) error {
+	if cp, ok := p.tx.(*connPool); ok {
+		ptx, err := cp.p.BeginTx(ctx, pgx.TxOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to begin transction: %v", err)
+		}
+
+		if err := fn(&PsqlDB{tx: ptx}); err != nil {
+			rollbackErr := ptx.Rollback(ctx)
+			if rollbackErr != nil {
+				return fmt.Errorf("failed to rollback transaction: %v", rollbackErr)
+			}
+
+			return fmt.Errorf("failed to execute transaction: %v, it has been rolled back", err)
+		}
+
+		if err := ptx.Commit(ctx); err != nil {
+			return fmt.Errorf("failed to commit transaction: %v", err)
+		}
+	} else {
+		return fmt.Errorf("cannot start transaction on a transaction")
+	}
+
+	return nil
+}
+
 func (p *PsqlDB) Close() error {
-	p.pool.Close()
+	if cp, ok := p.tx.(*connPool); ok {
+		cp.p.Close()
+	}
+
 	return nil
 }

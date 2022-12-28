@@ -62,32 +62,38 @@ func (c *Committer) commitBlock(block *msgCommitBlock) error {
 		return fmt.Errorf("err creating full block: %w", err)
 	}
 
-	fullBlock.Block.ChainId = 1
-	if _, err := c.storage.InsertBlock(c.ctx, fullBlock.Block); err != nil {
-		return fmt.Errorf("err insert block: %w", err)
-	}
-
-	for _, transaction := range fullBlock.Txs {
-		transaction.Tx.ChainId = 1
-		txId, err := c.storage.InsertTransaction(c.ctx, transaction.Tx)
-		if err != nil {
-			return fmt.Errorf("err insert transaction: %w", err)
+	if err := c.storage.WithTransaction(c.ctx, func(dbTx db.DB) error {
+		fullBlock.Block.ChainId = 1
+		if _, err := dbTx.InsertBlock(c.ctx, fullBlock.Block); err != nil {
+			return fmt.Errorf("err insert block: %w", err)
 		}
 
-		for _, evt := range transaction.Events {
-			evt.ChainId = 1
-			evt.TxId = int(txId)
-			if _, err := c.storage.InsertEvent(c.ctx, evt); err != nil {
-				return fmt.Errorf("err insert event: %w", err)
+		for _, transaction := range fullBlock.Txs {
+			transaction.Tx.ChainId = 1
+			txId, err := dbTx.InsertTransaction(c.ctx, transaction.Tx)
+			if err != nil {
+				return fmt.Errorf("err insert transaction: %w", err)
+			}
+
+			for _, evt := range transaction.Events {
+				evt.ChainId = 1
+				evt.TxId = int(txId)
+				if _, err := dbTx.InsertEvent(c.ctx, evt); err != nil {
+					return fmt.Errorf("err insert event: %w", err)
+				}
+			}
+
+			for _, msg := range transaction.Messages {
+				msg.TransactionId = int(txId)
+				if _, err := dbTx.InsertMessage(c.ctx, msg); err != nil {
+					return fmt.Errorf("err insert message: %w", err)
+				}
 			}
 		}
 
-		for _, msg := range transaction.Messages {
-			msg.TransactionId = int(txId)
-			if _, err := c.storage.InsertMessage(c.ctx, msg); err != nil {
-				return fmt.Errorf("err insert message: %w", err)
-			}
-		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("err with transaction: %w", err)
 	}
 
 	return nil

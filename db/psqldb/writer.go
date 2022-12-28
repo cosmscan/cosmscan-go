@@ -18,7 +18,7 @@ func (p *PsqlDB) InsertChain(ctx context.Context, chain *db.Chain) (int64, error
 		return 0, err
 	}
 
-	if err := p.pool.QueryRow(ctx, sql, args...).Scan(&id); err != nil {
+	if err := p.tx.QueryRow(ctx, sql, args...).Scan(&id); err != nil {
 		return 0, err
 	}
 
@@ -42,7 +42,7 @@ func (p *PsqlDB) InsertBlock(ctx context.Context, block *db.Block) (int64, error
 		return 0, err
 	}
 
-	if err := p.pool.QueryRow(ctx, sql, args...).Scan(&id); err != nil {
+	if err := p.tx.QueryRow(ctx, sql, args...).Scan(&id); err != nil {
 		return 0, err
 	}
 
@@ -62,7 +62,7 @@ func (p *PsqlDB) InsertTransaction(ctx context.Context, tx *db.Transaction) (int
 		return 0, err
 	}
 
-	if err := p.pool.QueryRow(ctx, sql, args...).Scan(&id); err != nil {
+	if err := p.tx.QueryRow(ctx, sql, args...).Scan(&id); err != nil {
 		return 0, err
 	}
 
@@ -83,7 +83,7 @@ func (p *PsqlDB) InsertEvent(ctx context.Context, event *db.Event) (int64, error
 		return 0, err
 	}
 
-	if err := p.pool.QueryRow(ctx, sql, args...).Scan(&id); err != nil {
+	if err := p.tx.QueryRow(ctx, sql, args...).Scan(&id); err != nil {
 		return 0, err
 	}
 
@@ -102,7 +102,7 @@ func (p *PsqlDB) InsertAccount(ctx context.Context, account *db.Account) (int64,
 		return 0, err
 	}
 
-	if err := p.pool.QueryRow(ctx, sql, args...).Scan(&id); err != nil {
+	if err := p.tx.QueryRow(ctx, sql, args...).Scan(&id); err != nil {
 		return 0, err
 	}
 
@@ -121,7 +121,7 @@ func (p *PsqlDB) InsertMessage(ctx context.Context, message *db.Message) (int64,
 		return 0, err
 	}
 
-	if err := p.pool.QueryRow(ctx, sql, args...).Scan(&id); err != nil {
+	if err := p.tx.QueryRow(ctx, sql, args...).Scan(&id); err != nil {
 		return 0, err
 	}
 

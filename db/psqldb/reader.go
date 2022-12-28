@@ -3,6 +3,7 @@ package psqldb
 import (
 	"context"
 	"cosmscan-go/db"
+
 	sq "github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/v2/pgxscan"
 )
@@ -18,7 +19,7 @@ func (p *PsqlDB) Block(ctx context.Context, height db.BlockHeight) (*db.Block, e
 		return nil, err
 	}
 
-	row, err := p.pool.Query(ctx, sql, args...)
+	row, err := p.tx.Query(ctx, sql, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +43,7 @@ func (p *PsqlDB) LatestBlock(ctx context.Context) (*db.Block, error) {
 		return nil, err
 	}
 
-	row, err := p.pool.Query(ctx, sql, args...)
+	row, err := p.tx.Query(ctx, sql, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +66,7 @@ func (p *PsqlDB) BlockByHash(ctx context.Context, hash string) (*db.Block, error
 		return nil, err
 	}
 
-	row, err := p.pool.Query(ctx, sql, args...)
+	row, err := p.tx.Query(ctx, sql, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +86,7 @@ func (p *PsqlDB) Transaction(ctx context.Context, hash string) (*db.Transaction,
 		return nil, err
 	}
 
-	row, err := p.pool.Query(ctx, sql, args...)
+	row, err := p.tx.Query(ctx, sql, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +106,7 @@ func (p *PsqlDB) EventsInTx(ctx context.Context, txId int) ([]*db.Event, error) 
 		return nil, err
 	}
 
-	if err := pgxscan.Select(ctx, p.pool, &events, sql, args...); err != nil {
+	if err := pgxscan.Select(ctx, p.tx, &events, sql, args...); err != nil {
 		return nil, err
 	}
 
@@ -120,7 +121,7 @@ func (p *PsqlDB) MessagesInTx(ctx context.Context, txId int) ([]*db.Message, err
 		return nil, err
 	}
 
-	if err := pgxscan.Select(ctx, p.pool, &messages, sql, args...); err != nil {
+	if err := pgxscan.Select(ctx, p.tx, &messages, sql, args...); err != nil {
 		return nil, err
 	}
 
