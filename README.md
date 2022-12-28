@@ -18,6 +18,14 @@ Cosmscan is here to solve this problem. 🚀🚀
 - Support default useful queries with `gRPC` / `HTTP 2.0`
 - Easy installation and configuration
 
+## Test on the local machine
+```shell
+$ cd ./e2e
+$ docker-compose up -d 
+$ cd ../ 
+$ make run
+```
+
 ## Docs
 - [System Design](./docs/design.md)
 
