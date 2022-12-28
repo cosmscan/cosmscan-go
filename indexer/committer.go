@@ -5,6 +5,7 @@ import (
 	"cosmscan-go/db"
 	"cosmscan-go/indexer/schema"
 	"fmt"
+	"time"
 
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
@@ -30,16 +31,34 @@ func NewCommitter(storage db.DB) *Committer {
 }
 
 func (c *Committer) Run(blockCh chan *msgCommitBlock) {
+	var cnt int
+	var start db.BlockHeight
+	var end db.BlockHeight
+
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-c.ctx.Done():
 			c.log.Info("committer is shutting down")
 			return
+		case tick := <-ticker.C:
+			cnt = 0
+			c.log.Infow("blocks has been committed", "at", tick, "cnt", cnt, "start", start, "end", end)
 		case block := <-blockCh:
 			if err := c.commitBlock(block); err != nil {
 				// sometimes database is temporarily unavailable, in the future, we need to retry
 				c.log.Fatalw("failed to commit block, this is unexpected behavior", "err", err)
 			}
+			c.log.Debugw("new block committed", "height", block.block.Block.Height)
+
+			if cnt == 0 {
+				start = db.BlockHeight(block.block.Block.Height)
+			} else {
+				end = db.BlockHeight(block.block.Block.Height)
+			}
+			cnt++
 		}
 	}
 }

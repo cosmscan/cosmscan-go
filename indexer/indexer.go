@@ -81,7 +81,7 @@ func (i *Indexer) Run() error {
 
 	wg.Add(1)
 	go func() {
-		i.log.Info("started committerr")
+		i.log.Info("started committer")
 		defer wg.Done()
 		i.startCommitter(i.ctx, blockCh)
 		i.Close()
