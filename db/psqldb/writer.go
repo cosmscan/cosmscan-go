@@ -127,3 +127,40 @@ func (p *PsqlDB) InsertMessage(ctx context.Context, message *db.Message) (int64,
 
 	return id, nil
 }
+
+func (p *PsqlDB) UpdateAccountBalance(ctx context.Context, accountId int64, coinName string, balance uint64) error {
+	sql, args, err := psql.Select("count(*)").
+		From("balances").
+		Where("account_id = ? AND coin_name = ?", accountId, coinName).
+		ToSql()
+	if err != nil {
+		return err
+	}
+
+	var count int
+	if err := p.tx.QueryRow(ctx, sql, args...).Scan(&count); err != nil {
+		return err
+	}
+
+	if count == 0 {
+		sql, args, err = psql.Insert("account_balances").
+			Columns("account_id", "coin_name", "balance").
+			Values(accountId, coinName, balance).
+			ToSql()
+	} else {
+		sql, args, err = psql.Update("account_balances").
+			Set("balance", balance).
+			Where("account_id = ? AND coin_name = ?", accountId, coinName).
+			ToSql()
+	}
+
+	if err != nil {
+		return err
+	}
+
+	if _, err := p.tx.Exec(ctx, sql, args...); err != nil {
+		return err
+	}
+
+	return nil
+}

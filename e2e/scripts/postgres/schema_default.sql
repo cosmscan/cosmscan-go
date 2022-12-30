@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS accounts (
 );
 
 -- account_balance --
-CREATE TABLE IF NOT EXISTS account_balance (
+CREATE TABLE IF NOT EXISTS account_balances (
     id SERIAL PRIMARY KEY,
     account_id INT NOT NULL,
     amount BIGINT NOT NULL,

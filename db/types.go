@@ -20,6 +20,10 @@ type Writer interface {
 	// InsertAccount inserts the given account into the database.
 	InsertAccount(ctx context.Context, account *Account) (int64, error)
 
+	// UpdateAccountBalance updates the balance of the given account.
+	// If the account does not exist, new record is created.
+	UpdateAccountBalance(ctx context.Context, accountId int64, coinName string, balance uint64) error
+
 	// InsertMessage inserts the given message into the database.
 	InsertMessage(ctx context.Context, message *Message) (int64, error)
 }

@@ -1,11 +1,24 @@
 package schema
 
+import "math/big"
+
 // Accounts is a list of accounts.
-type Accounts []Account
+type Accounts []*Account
 
 // Account represents a single account in the blockchain.
 type Account struct {
 	Address string
+}
+
+type AccountCoins []*AccountCoin
+type AccountCoin struct {
+	Denom  string
+	Amount *big.Int
+}
+
+type AccountBalance struct {
+	Account *Account
+	Balance AccountCoins
 }
 
 // AccountsFromFullBlock returns a list of accounts extracted from the FullBlock
@@ -18,9 +31,9 @@ func AccountsFromFullBlock(block *FullBlock) Accounts {
 			if evt.Type == "transfer" {
 				switch evt.Key {
 				case "sender":
-					accounts = append(accounts, Account{Address: evt.Value})
+					accounts = append(accounts, &Account{Address: evt.Value})
 				case "recipient":
-					accounts = append(accounts, Account{Address: evt.Value})
+					accounts = append(accounts, &Account{Address: evt.Value})
 				}
 			}
 		}

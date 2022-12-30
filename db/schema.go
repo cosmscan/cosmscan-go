@@ -101,7 +101,7 @@ type Account struct {
 // AccountBalance keeps the balance of the certain account
 type AccountBalance struct {
 	ID         int64        `db:"id"`
-	AccountId  int          `db:"account_id"`
+	AccountId  int64        `db:"account_id"`
 	Amount     uint64       `db:"amount"`
 	CoinName   string       `db:"coin_name"` // CoinName is the name of coin, such as "uatom", actually, it's the denom of coin
 	InsertedAt time.Time    `db:"inserted_at"`

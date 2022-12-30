@@ -8,9 +8,10 @@ import (
 	"cosmscan-go/indexer/fetcher"
 	"cosmscan-go/indexer/schema"
 	"errors"
+	"sync"
+
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
-	"sync"
 
 	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
@@ -71,23 +72,40 @@ func (i *Indexer) Run() error {
 		return err
 	}
 
+	accountFetcher := fetcher.NewAccountBalanceFetcher(i.cli)
+	accReqCh, accResCh, err := accountFetcher.Subscribe()
+	if err != nil {
+		return err
+	}
+
 	// run fetcher
 	wg.Add(1)
 	go func() {
-		i.log.Info("started block fetcher")
+		defer i.Close()
 		defer wg.Done()
+
+		i.log.Info("started block fetcher")
 		if err := blockFetcher.Run(); err != nil {
 			i.log.Fatalw("failed to run block fetcher", "err", err)
 		}
-		i.Close()
 	}()
 
 	wg.Add(1)
 	go func() {
-		i.log.Info("started committer")
+		defer i.Close()
 		defer wg.Done()
-		i.startCommitter(i.ctx, blockCh)
-		i.Close()
+
+		i.log.Info("started account fetcher")
+		accountFetcher.Run()
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer i.Close()
+		defer wg.Done()
+
+		i.log.Info("started committer")
+		i.startCommitter(i.ctx, blockCh, accReqCh, accResCh)
 	}()
 
 	select {
@@ -115,12 +133,13 @@ func (i *Indexer) pickCurrentBlock() (db.BlockHeight, error) {
 	return block.Height + 1, nil
 }
 
-func (i *Indexer) startCommitter(ctx context.Context, blockCh <-chan *fetcher.FetchedBlock) {
+func (i *Indexer) startCommitter(ctx context.Context, blockCh <-chan *fetcher.FetchedBlock, accReqCh chan<- *schema.Account, accResCh <-chan *schema.AccountBalance) {
 	commitCh := make(chan *schema.FullBlock, 10)
+	accCommitCh := make(chan *schema.AccountBalance, 10)
 
 	// run committer
 	committer := NewCommitter(i.storage)
-	go committer.Run(commitCh)
+	go committer.Run(commitCh, accCommitCh)
 
 	for {
 		select {
@@ -142,6 +161,14 @@ func (i *Indexer) startCommitter(ctx context.Context, blockCh <-chan *fetcher.Fe
 			}
 
 			commitCh <- fullBlock
+
+			// extract account from full block
+			accounts := schema.AccountsFromFullBlock(fullBlock)
+			for _, acc := range accounts {
+				accReqCh <- acc
+			}
+		case acc := <-accResCh:
+			accCommitCh <- acc
 		}
 	}
 }

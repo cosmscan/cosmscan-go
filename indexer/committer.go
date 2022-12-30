@@ -28,10 +28,23 @@ func NewCommitter(storage db.DB) *Committer {
 	}
 }
 
-func (c *Committer) Run(blockCh chan *schema.FullBlock) {
-	var cnt int
-	var start db.BlockHeight
-	var end db.BlockHeight
+func (c *Committer) Run(blockCh chan *schema.FullBlock, accountCh chan *schema.AccountBalance) {
+	type blockStat struct {
+		proceeded int
+		start     db.BlockHeight
+		end       db.BlockHeight
+	}
+	type accountStat struct {
+		proceeded int
+	}
+
+	stats := &struct {
+		block   *blockStat
+		account *accountStat
+	}{
+		block:   &blockStat{0, 0, 0},
+		account: &accountStat{0},
+	}
 
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
@@ -42,8 +55,14 @@ func (c *Committer) Run(blockCh chan *schema.FullBlock) {
 			c.log.Info("committer is shutting down")
 			return
 		case tick := <-ticker.C:
-			cnt = 0
-			c.log.Infow("blocks has been committed", "at", tick, "cnt", cnt, "start", start, "end", end)
+			c.log.Infow("Number of data has been committed",
+				"at", tick,
+				"blocks", stats.block.proceeded,
+				"block_start", stats.block.start,
+				"block_end", stats.block.end,
+				"accounts", stats.account.proceeded)
+			stats.block.proceeded = 0
+			stats.account.proceeded = 0
 		case block := <-blockCh:
 			if err := c.commitBlock(block); err != nil {
 				// sometimes database is temporarily unavailable, in the future, we need to retry
@@ -51,12 +70,35 @@ func (c *Committer) Run(blockCh chan *schema.FullBlock) {
 			}
 			c.log.Debugw("new block committed", "height", block.Block.Height)
 
-			if cnt == 0 {
-				start = block.Block.Height
+			if stats.block.proceeded == 0 {
+				stats.block.start = block.Block.Height
 			} else {
-				end = block.Block.Height
+				stats.block.end = block.Block.Height
 			}
-			cnt++
+			stats.block.proceeded++
+		case account := <-accountCh:
+			accountId, err := c.storage.InsertAccount(c.ctx, &db.Account{
+				ChainId: 1,
+				Address: account.Account.Address,
+			})
+			if err != nil {
+				c.log.Warn("inserting account failed with", "err", err, "account", account.Account.Address)
+				continue
+			}
+
+			for _, b := range account.Balance {
+				amount := b.Amount.Uint64()
+				if err := c.storage.UpdateAccountBalance(c.ctx, accountId, b.Denom, amount); err != nil {
+					c.log.Warn("updating account balance failed with",
+						"err", err,
+						"accountId", accountId,
+						"denom", b.Denom,
+						"amount", amount)
+					continue
+				}
+			}
+
+			stats.account.proceeded++
 		}
 	}
 }
