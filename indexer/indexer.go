@@ -162,11 +162,13 @@ func (i *Indexer) startCommitter(ctx context.Context, blockCh <-chan *fetcher.Fe
 
 			commitCh <- fullBlock
 
-			// extract account from full block
-			accounts := schema.AccountsFromFullBlock(fullBlock)
-			for _, acc := range accounts {
-				accReqCh <- acc
-			}
+			// extract account from full block and send to the channel
+			go func(fb *schema.FullBlock) {
+				accounts := schema.AccountsFromFullBlock(fb)
+				for _, acc := range accounts {
+					accReqCh <- acc
+				}
+			}(fullBlock)
 		case acc := <-accResCh:
 			accCommitCh <- acc
 		}

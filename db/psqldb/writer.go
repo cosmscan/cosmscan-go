@@ -92,9 +92,9 @@ func (p *PsqlDB) InsertEvent(ctx context.Context, event *db.Event) (int64, error
 
 func (p *PsqlDB) InsertAccount(ctx context.Context, account *db.Account) (int64, error) {
 	var id int64
-	sql, args, err := psql.Insert("events").
-		Columns("chain_id", "address").
-		Values(account.ChainId, account.Address).
+	sql, args, err := psql.Insert("accounts").
+		Columns("chain_id", "address", "inserted_at").
+		Values(account.ChainId, account.Address, time.Now()).
 		Suffix("RETURNING \"id\"").
 		ToSql()
 
@@ -130,7 +130,7 @@ func (p *PsqlDB) InsertMessage(ctx context.Context, message *db.Message) (int64,
 
 func (p *PsqlDB) UpdateAccountBalance(ctx context.Context, accountId int64, coinName string, balance uint64) error {
 	sql, args, err := psql.Select("count(*)").
-		From("balances").
+		From("account_balances").
 		Where("account_id = ? AND coin_name = ?", accountId, coinName).
 		ToSql()
 	if err != nil {
@@ -144,12 +144,13 @@ func (p *PsqlDB) UpdateAccountBalance(ctx context.Context, accountId int64, coin
 
 	if count == 0 {
 		sql, args, err = psql.Insert("account_balances").
-			Columns("account_id", "coin_name", "balance").
-			Values(accountId, coinName, balance).
+			Columns("account_id", "coin_name", "amount", "inserted_at").
+			Values(accountId, coinName, balance, time.Now()).
 			ToSql()
 	} else {
 		sql, args, err = psql.Update("account_balances").
-			Set("balance", balance).
+			Set("amount", balance).
+			Set("updated_at", time.Now()).
 			Where("account_id = ? AND coin_name = ?", accountId, coinName).
 			ToSql()
 	}

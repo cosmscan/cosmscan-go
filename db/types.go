@@ -54,12 +54,18 @@ type MessageReader interface {
 	MessagesInTx(ctx context.Context, txId int) ([]*Message, error)
 }
 
+type AccountReader interface {
+	// FindAccountByAddress returns whether the account exists or not
+	FindAccountByAddress(ctx context.Context, chainId int64, address string) (*Account, error)
+}
+
 type DB interface {
 	Writer
 	BlockReader
 	TransactionReader
 	EventReader
 	MessageReader
+	AccountReader
 
 	// WithTransaction executes the given function within a transaction.
 	// if fn returns an error, the transaction is rolled back.

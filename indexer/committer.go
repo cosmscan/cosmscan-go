@@ -77,13 +77,24 @@ func (c *Committer) Run(blockCh chan *schema.FullBlock, accountCh chan *schema.A
 			}
 			stats.block.proceeded++
 		case account := <-accountCh:
-			accountId, err := c.storage.InsertAccount(c.ctx, &db.Account{
-				ChainId: 1,
-				Address: account.Account.Address,
-			})
-			if err != nil {
-				c.log.Warn("inserting account failed with", "err", err, "account", account.Account.Address)
-				continue
+			var accountId int64
+
+			got, err := c.storage.FindAccountByAddress(c.ctx, 1, account.Account.Address)
+			if err != nil && err != db.ErrNotFound {
+				c.log.Fatalw("failed to check account existence", "err", err)
+			}
+
+			if err == db.ErrNotFound {
+				accountId, err = c.storage.InsertAccount(c.ctx, &db.Account{
+					ChainId: 1,
+					Address: account.Account.Address,
+				})
+				if err != nil {
+					c.log.Warn("inserting account failed with", "err", err, "account", account.Account.Address)
+					continue
+				}
+			} else {
+				accountId = got.ID
 			}
 
 			for _, b := range account.Balance {
