@@ -1,12 +1,10 @@
 package main
 
 import (
+	"cosmscan-go/cmd/utils"
 	"cosmscan-go/indexer"
-	"cosmscan-go/pkg/env"
-	"errors"
 	"flag"
 	"fmt"
-	"syscall"
 
 	"go.uber.org/zap"
 )
@@ -20,38 +18,25 @@ func main() {
 	}
 
 	// load config
-	cfg, err := indexer.LoadConfig(*flagConfigFile)
-	if err != nil {
-		panic(fmt.Errorf("failed load the config file: %v", err))
-	}
+	cfg := utils.MustLoadIndexerConfig(*flagConfigFile)
 
 	// setting up logger
-	var logger *zap.Logger
-	if env.FromString(cfg.Log.Environment) == env.Unknown {
-		panic(fmt.Errorf("unknown log environment: %s", cfg.Log.Environment))
-	}
-	if env.FromString(cfg.Log.Environment) == env.Production {
-		logger, err = zap.NewProduction()
-	} else {
-		logger, err = zap.NewDevelopment()
-	}
-	if err != nil {
-		panic(fmt.Errorf("failed to create logger: %v", err))
-	}
-	zap.ReplaceGlobals(logger)
+	// it replaces the global logger according to the configuration
+	utils.InitAndReplaceLogger(cfg.Log)
 	defer func() {
-		if err := logger.Sync(); err != nil && !errors.Is(err, syscall.ENOTTY) {
-			panic(fmt.Errorf("failed to sync logger: %v", err))
+		err := zap.L().Sync()
+		if err != nil {
+			panic(fmt.Errorf("failed to sync logger during shutdown: %w", err))
 		}
 	}()
 
 	// set up indexer
 	app, err := indexer.NewIndexer(cfg)
 	if err != nil {
-		logger.Error("failed to create indexer app", zap.Error(err))
+		zap.L().Error("failed to create indexer app", zap.Error(err))
 	}
 
 	if err := app.Run(); err != nil {
-		logger.Error("failed to run indexer app", zap.Error(err))
+		zap.L().Error("failed to run indexer app", zap.Error(err))
 	}
 }

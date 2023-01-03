@@ -4,6 +4,7 @@ import (
 	"context"
 	"cosmscan-go/db"
 	"errors"
+
 	sq "github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5"
@@ -154,4 +155,31 @@ func (p *PsqlDB) FindAccountByAddress(ctx context.Context, chainId int64, addres
 	}
 
 	return &acc, nil
+}
+
+func (p *PsqlDB) FindChainByName(ctx context.Context, name string) (*db.Chain, error) {
+	var chain db.Chain
+
+	sql, args, err := psql.Select("*").
+		From("chains").
+		Where(sq.Eq{"chain_name": name}).ToSql()
+
+	if err != nil {
+		return nil, err
+	}
+
+	row, err := p.tx.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := pgxscan.ScanOne(&chain, row); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, db.ErrNotFound
+		} else {
+			return nil, err
+		}
+	}
+
+	return &chain, nil
 }

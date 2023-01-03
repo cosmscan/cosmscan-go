@@ -14,16 +14,18 @@ type Committer struct {
 	log        *zap.SugaredLogger
 	ctx        context.Context
 	cancelFunc context.CancelFunc
+	chainId    int64
 	storage    db.DB
 }
 
-func NewCommitter(storage db.DB) *Committer {
+func NewCommitter(storage db.DB, chainId int64) *Committer {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &Committer{
 		log:        zap.S().Named("committer"),
 		ctx:        ctx,
 		cancelFunc: cancel,
+		chainId:    chainId,
 		storage:    storage,
 	}
 }
@@ -86,7 +88,7 @@ func (c *Committer) Run(blockCh chan *schema.FullBlock, accountCh chan *schema.A
 
 			if err == db.ErrNotFound {
 				accountId, err = c.storage.InsertAccount(c.ctx, &db.Account{
-					ChainId: 1,
+					ChainId: c.chainId,
 					Address: account.Account.Address,
 				})
 				if err != nil {
@@ -120,20 +122,20 @@ func (c *Committer) Close() {
 
 func (c *Committer) commitBlock(fullBlock *schema.FullBlock) error {
 	if err := c.storage.WithTransaction(c.ctx, func(dbTx db.DB) error {
-		fullBlock.Block.ChainId = 1
+		fullBlock.Block.ChainId = c.chainId
 		if _, err := dbTx.InsertBlock(c.ctx, fullBlock.Block); err != nil {
 			return fmt.Errorf("err insert block: %w", err)
 		}
 
 		for _, transaction := range fullBlock.Txs {
-			transaction.Tx.ChainId = 1
+			transaction.Tx.ChainId = c.chainId
 			txId, err := dbTx.InsertTransaction(c.ctx, transaction.Tx)
 			if err != nil {
 				return fmt.Errorf("err insert transaction: %w", err)
 			}
 
 			for _, evt := range transaction.Events {
-				evt.ChainId = 1
+				evt.ChainId = c.chainId
 				evt.TxId = int(txId)
 				if _, err := dbTx.InsertEvent(c.ctx, evt); err != nil {
 					return fmt.Errorf("err insert event: %w", err)

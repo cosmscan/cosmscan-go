@@ -9,8 +9,8 @@ import (
 func (p *PsqlDB) InsertChain(ctx context.Context, chain *db.Chain) (int64, error) {
 	var id int64
 	sql, args, err := psql.Insert("chains").
-		Columns("chain_id", "chain_name").
-		Values(chain.ChainId, chain.ChainName).
+		Columns("chain_id", "chain_name", "inserted_at").
+		Values(chain.ChainId, chain.ChainName, time.Now()).
 		Suffix("RETURNING \"id\"").
 		ToSql()
 

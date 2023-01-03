@@ -39,6 +39,11 @@ type BlockReader interface {
 	LatestBlock(ctx context.Context) (*Block, error)
 }
 
+type ChainReader interface {
+	// FindChainByName returns the chain with the given name.
+	FindChainByName(ctx context.Context, name string) (*Chain, error)
+}
+
 type TransactionReader interface {
 	// Transaction returns the transaction with the given hash.
 	Transaction(ctx context.Context, hash string) (*Transaction, error)
@@ -63,6 +68,7 @@ type DB interface {
 	Writer
 	BlockReader
 	TransactionReader
+	ChainReader
 	EventReader
 	MessageReader
 	AccountReader

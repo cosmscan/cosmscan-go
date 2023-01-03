@@ -3,6 +3,7 @@ package indexer
 import (
 	"context"
 	"cosmscan-go/client"
+	"cosmscan-go/config"
 	"cosmscan-go/db"
 	"cosmscan-go/db/psqldb"
 	"cosmscan-go/indexer/fetcher"
@@ -21,12 +22,12 @@ type Indexer struct {
 	ctx        context.Context
 	cancelFunc context.CancelFunc
 	log        *zap.SugaredLogger
-	cfg        *Config
+	cfg        *config.IndexerConfig
 	cli        *client.Client
 	storage    db.DB
 }
 
-func NewIndexer(cfg *Config) (*Indexer, error) {
+func NewIndexer(cfg *config.IndexerConfig) (*Indexer, error) {
 	storage, err := psqldb.NewPsqlDB(&psqldb.Config{
 		Host:     cfg.DB.Host,
 		Port:     cfg.DB.Port,
@@ -61,6 +62,9 @@ func (i *Indexer) Run() error {
 	wg := sync.WaitGroup{}
 	i.log.Info("preparing to start indexing")
 
+	chainId := i.loadOrStoreChainId()
+
+	// pick last committed block
 	current, err := i.pickCurrentBlock()
 	if err != nil {
 		return err
@@ -105,7 +109,7 @@ func (i *Indexer) Run() error {
 		defer wg.Done()
 
 		i.log.Info("started committer")
-		i.startCommitter(i.ctx, blockCh, accReqCh, accResCh)
+		i.startCommitter(i.ctx, chainId, blockCh, accReqCh, accResCh)
 	}()
 
 	select {
@@ -133,12 +137,12 @@ func (i *Indexer) pickCurrentBlock() (db.BlockHeight, error) {
 	return block.Height + 1, nil
 }
 
-func (i *Indexer) startCommitter(ctx context.Context, blockCh <-chan *fetcher.FetchedBlock, accReqCh chan<- *schema.Account, accResCh <-chan *schema.AccountBalance) {
+func (i *Indexer) startCommitter(ctx context.Context, chainId int64, blockCh <-chan *fetcher.FetchedBlock, accReqCh chan<- *schema.Account, accResCh <-chan *schema.AccountBalance) {
 	commitCh := make(chan *schema.FullBlock, 10)
 	accCommitCh := make(chan *schema.AccountBalance, 10)
 
 	// run committer
-	committer := NewCommitter(i.storage)
+	committer := NewCommitter(i.storage, chainId)
 	go committer.Run(commitCh, accCommitCh)
 
 	for {
@@ -172,5 +176,28 @@ func (i *Indexer) startCommitter(ctx context.Context, blockCh <-chan *fetcher.Fe
 		case acc := <-accResCh:
 			accCommitCh <- acc
 		}
+	}
+}
+
+// loadOrStoreChainId load or store the chain information from configs.
+// it stores the new chain if it doesn't exist with given name.
+func (i *Indexer) loadOrStoreChainId() int64 {
+	chain, err := i.storage.FindChainByName(context.Background(), i.cfg.Chain.Name)
+	if err == nil {
+		return chain.ID
+	}
+
+	if err != db.ErrNotFound {
+		i.log.Fatalw("failed to find chain with unknown reason", "err", err)
+		return 0
+	} else {
+		insertedId, err := i.storage.InsertChain(context.Background(), &db.Chain{
+			ChainId:   i.cfg.Chain.ID,
+			ChainName: i.cfg.Chain.Name,
+		})
+		if err != nil {
+			i.log.Fatalw("failed to create a new chain", "err", err)
+		}
+		return insertedId
 	}
 }

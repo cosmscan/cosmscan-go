@@ -26,7 +26,7 @@ type Chain struct {
 // Block represents a block in cosmos based blockchain
 type Block struct {
 	ID                 int64        `db:"id"`
-	ChainId            int          `db:"chain_id"`
+	ChainId            int64        `db:"chain_id"`
 	Height             BlockHeight  `db:"height"`
 	Hash               string       `db:"block_hash"`
 	ParentHash         string       `db:"prev_hash"`
@@ -47,7 +47,7 @@ type Block struct {
 // Transaction represents a transaction in cosmos based blockchain
 type Transaction struct {
 	ID         int64        `db:"id"`
-	ChainId    int          `db:"chain_id"`
+	ChainId    int64        `db:"chain_id"`
 	Hash       string       `db:"transaction_hash"`
 	Height     BlockHeight  `db:"height"`
 	Code       int          `db:"code"`
@@ -67,7 +67,7 @@ type Transaction struct {
 // Event is emitted when the transaction is executed, it has a one-to-many relationship with the transaction
 type Event struct {
 	ID         int64        `db:"id"`
-	ChainId    int          `db:"chain_id"`
+	ChainId    int64        `db:"chain_id"`
 	TxId       int          `db:"tx_id"`
 	Height     BlockHeight  `db:"block_height"`
 	Seq        uint32       `db:"event_seq"`
@@ -92,7 +92,7 @@ type Message struct {
 // Account describes wallet address in the blockchain
 type Account struct {
 	ID         int64        `db:"id"`
-	ChainId    int          `db:"chain_id"`
+	ChainId    int64        `db:"chain_id"`
 	Address    string       `db:"address"`
 	InsertedAt time.Time    `db:"inserted_at"`
 	UpdatedAt  sql.NullTime `db:"updated_at"`

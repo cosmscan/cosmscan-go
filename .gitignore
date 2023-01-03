@@ -1,3 +1,5 @@
+bin/
+
 # OS
 .DS_Store
 *.swp
