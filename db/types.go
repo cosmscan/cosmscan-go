@@ -40,6 +40,9 @@ type BlockReader interface {
 }
 
 type ChainReader interface {
+	// AllChains returns all chains in the database.
+	AllChains(ctx context.Context) ([]*Chain, error)
+
 	// FindChainByName returns the chain with the given name.
 	FindChainByName(ctx context.Context, name string) (*Chain, error)
 }

@@ -183,3 +183,18 @@ func (p *PsqlDB) FindChainByName(ctx context.Context, name string) (*db.Chain, e
 
 	return &chain, nil
 }
+
+func (p *PsqlDB) AllChains(ctx context.Context) ([]*db.Chain, error) {
+	var chains []*db.Chain
+
+	sql, args, err := psql.Select("*").From("chains").ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := pgxscan.Select(ctx, p.tx, &chains, sql, args...); err != nil {
+		return nil, err
+	}
+
+	return chains, nil
+}

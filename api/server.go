@@ -30,6 +30,8 @@ func NewServer(cfg *config.ServerConfig) *Server {
 // WithHandlers attach all the handlers to the gin.Engine
 func (s *Server) WithHandlers(e *gin.Engine) {
 	e.GET("/block/:height", handlers.GetBlockByHeight)
+
+	e.GET("/api/v1/chains", handlers.GetAllChains)
 }
 
 func (s *Server) Serve() error {
