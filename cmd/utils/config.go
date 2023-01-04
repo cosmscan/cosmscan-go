@@ -9,3 +9,11 @@ func MustLoadIndexerConfig(filename string) *config.IndexerConfig {
 	}
 	return cfg
 }
+
+func MustLoadServerConfig(filename string) *config.ServerConfig {
+	cfg, err := config.LoadServerConfig(filename)
+	if err != nil {
+		panic(err)
+	}
+	return cfg
+}

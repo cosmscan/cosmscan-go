@@ -26,6 +26,14 @@ $ cd ../
 $ make run
 ```
 
+## Launch API Server
+```shell
+$ make build
+$ ./bin/server --config-file ./config-server.yml
+
+2023-01-04T13:39:35.588+0900    INFO    api     api/server.go:41        starting api server
+```
+
 ## Docs
 - [System Design](./docs/design.md)
 

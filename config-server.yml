@@ -1,0 +1,13 @@
+http:
+  host: localhost
+  port: 8080
+  cors: false
+db:
+  host: localhost
+  port: 5432
+  user: cosmscan
+  password: cosmscan
+  database: cosmscan
+log:
+  environment: development
+  level: info
