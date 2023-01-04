@@ -31,7 +31,7 @@ func NewPsqlDB(config *Config) (*PsqlDB, error) {
 
 	pool, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to the postgres database: %v", err)
+		return nil, fmt.Errorf("failed to create a `pgxpool` instance: %v", err)
 	}
 
 	return &PsqlDB{

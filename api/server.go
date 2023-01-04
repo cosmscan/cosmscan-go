@@ -1,6 +1,7 @@
 package api
 
 import (
+	"cosmscan-go/api/handlers"
 	"cosmscan-go/config"
 	"cosmscan-go/db"
 	"fmt"
@@ -28,15 +29,15 @@ func NewServer(cfg *config.ServerConfig) *Server {
 
 // WithHandlers attach all the handlers to the gin.Engine
 func (s *Server) WithHandlers(e *gin.Engine) {
-
+	e.GET("/block/:height", handlers.GetBlockByHeight)
 }
 
 func (s *Server) Serve() error {
 	e := gin.New()
-	s.WithHandlers(e)
 	e.Use(ginzap.Ginzap(zap.L(), time.RFC3339, true))
 	e.Use(ginzap.RecoveryWithZap(zap.L(), true))
 	e.Use(MiddlewareDatabaseContext(s.db))
+	s.WithHandlers(e)
 
 	server := &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", s.cfg.Http.Host, s.cfg.Http.Port),
