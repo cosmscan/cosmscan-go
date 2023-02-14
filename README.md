@@ -34,6 +34,7 @@ $ ./bin/server --config-file ./config-server.yml
 
 ## Docs
 - [System Design](./docs/design.md)
+- [Project Structure](./docs/project_structure.md)
 
 ## Contribution
 If you are interested in contributing to this project,
