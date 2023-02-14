@@ -20,10 +20,8 @@ Cosmscan is here to solve this problem. 🚀🚀
 
 ## Test on the local machine
 ```shell
-$ cd ./e2e
+$ cd ./example
 $ docker-compose up -d 
-$ cd ../ 
-$ make run
 ```
 
 ## Launch API Server
