@@ -3,18 +3,18 @@ package client
 import (
 	"context"
 	"fmt"
+	"reflect"
+	"strconv"
+	"strings"
+
 	"github.com/cosmos/cosmos-sdk/store/rootmulti"
 	abci "github.com/tendermint/tendermint/abci/types"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/encoding"
 	"google.golang.org/grpc/encoding/proto"
 	"google.golang.org/grpc/metadata"
-	"reflect"
-	"strconv"
-	"strings"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
@@ -30,9 +30,8 @@ var protoCodec = encoding.GetCodec(proto.Name)
 // Client is a client for the cosmos-sdk based blockchain
 // This client is only used to query the blockchain since it has no functionality to invoke a transaction
 type Client struct {
-	log *zap.SugaredLogger
 	cfg *Config
-	rpc rpcclient.Client
+	RPC rpcclient.Client
 }
 
 func NewClient(cfg *Config) (*Client, error) {
@@ -41,9 +40,8 @@ func NewClient(cfg *Config) (*Client, error) {
 		return nil, err
 	}
 	return &Client{
-		log: zap.L().Sugar(),
 		cfg: cfg,
-		rpc: rpcClient,
+		RPC: rpcClient,
 	}, nil
 }
 
@@ -152,7 +150,7 @@ func (c *Client) QueryABCI(ctx context.Context, req abci.RequestQuery) (abci.Res
 		Height: req.Height,
 		Prove:  req.Prove,
 	}
-	result, err := c.rpc.ABCIQueryWithOptions(ctx, req.Path, req.Data, opts)
+	result, err := c.RPC.ABCIQueryWithOptions(ctx, req.Path, req.Data, opts)
 	if err != nil {
 		return abci.ResponseQuery{}, err
 	}

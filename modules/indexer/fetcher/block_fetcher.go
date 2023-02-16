@@ -2,8 +2,9 @@ package fetcher
 
 import (
 	"context"
-	"cosmscan-go/client"
 	"cosmscan-go/db"
+	client2 "cosmscan-go/internal/client"
+	"cosmscan-go/pkg/log"
 	"errors"
 	"sync"
 	"time"
@@ -11,7 +12,6 @@ import (
 	"github.com/cenkalti/backoff"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
-	"go.uber.org/zap"
 )
 
 type FetchedBlock struct {
@@ -23,11 +23,10 @@ type FetchedBlock struct {
 }
 
 type BlockFetcher struct {
-	cli        *client.Client
+	cli        *client2.Client
 	storage    db.DB
 	startBlock db.BlockHeight
 
-	log        *zap.SugaredLogger
 	ctx        context.Context
 	cancelFunc context.CancelFunc
 	init       bool
@@ -35,14 +34,13 @@ type BlockFetcher struct {
 	channel    chan *FetchedBlock
 }
 
-func NewBlockFetcher(cli *client.Client, storage db.DB, startBlock db.BlockHeight) *BlockFetcher {
+func NewBlockFetcher(cli *client2.Client, storage db.DB, startBlock db.BlockHeight) *BlockFetcher {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &BlockFetcher{
 		startBlock: startBlock,
 		cli:        cli,
 		storage:    storage,
-		log:        zap.S().Named("block_fetcher"),
 		ctx:        ctx,
 		cancelFunc: cancel,
 		init:       false,
@@ -72,12 +70,12 @@ func (f *BlockFetcher) Close() {
 
 func (f *BlockFetcher) run() error {
 	current := f.startBlock
-	f.log.Infow("start fetching blocks", "start_block", current)
+	log.Logger.Infow("start fetching blocks", "start_block", current)
 
 	for {
 		select {
 		case <-f.ctx.Done():
-			f.log.Infow("indexer is stopped at", "block", current)
+			log.Logger.Infow("indexer is stopped at", "block", current)
 			return nil
 		default:
 			b := backoff.NewExponentialBackOff()
@@ -90,7 +88,7 @@ func (f *BlockFetcher) run() error {
 				block, retry, err := f.fetchBlock(current)
 				if retry {
 					if err != nil {
-						f.log.Debugw("failed to fetch block, but will retry again", "block", current, "error", err)
+						log.Logger.Debugw("failed to fetch block, but will retry again", "block", current, "error", err)
 					}
 					continue
 				}
@@ -147,7 +145,7 @@ func (f *BlockFetcher) fetchBlock(height db.BlockHeight) (ret *FetchedBlock, ret
 			return nil, false, err
 		}
 
-		cosmosQueryResult, err := client.TransactionByHash(f.ctx, abciQueryResult.Hash.String(), f.cli)
+		cosmosQueryResult, err := client2.TransactionByHash(f.ctx, abciQueryResult.Hash.String(), f.cli)
 		if err != nil {
 			return nil, false, err
 		}

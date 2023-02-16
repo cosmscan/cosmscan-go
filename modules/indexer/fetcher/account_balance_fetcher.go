@@ -2,19 +2,17 @@ package fetcher
 
 import (
 	"context"
-	"cosmscan-go/client"
-	"cosmscan-go/indexer/schema"
+	client2 "cosmscan-go/internal/client"
+	"cosmscan-go/modules/indexer/schema"
+	"cosmscan-go/pkg/log"
 	"errors"
 	"sync"
-
-	"go.uber.org/zap"
 )
 
 // AccountBalanceFetcher aims to keep fetching the balances with accounts
 // we want to track how many account exists in the blockchain or who is top 10 holders.
 type AccountBalanceFetcher struct {
-	cli        *client.Client
-	log        *zap.SugaredLogger
+	cli        *client2.Client
 	ctx        context.Context
 	cancelFunc context.CancelFunc
 	init       bool
@@ -23,12 +21,11 @@ type AccountBalanceFetcher struct {
 	resC       chan *schema.AccountBalance
 }
 
-func NewAccountBalanceFetcher(cli *client.Client) *AccountBalanceFetcher {
+func NewAccountBalanceFetcher(cli *client2.Client) *AccountBalanceFetcher {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &AccountBalanceFetcher{
 		cli:        cli,
-		log:        zap.S().Named("account_balance_fetcher"),
 		ctx:        ctx,
 		cancelFunc: cancel,
 		init:       false,
@@ -61,12 +58,12 @@ func (f *AccountBalanceFetcher) run() {
 	for {
 		select {
 		case <-f.ctx.Done():
-			f.log.Info("the system is about to stop")
+			log.Logger.Info("the system is about to stop")
 			return
 		case account := <-f.reqC:
-			res, err := client.BalanceOf(f.ctx, f.cli, account.Address)
+			res, err := client2.BalanceOf(f.ctx, f.cli, account.Address)
 			if err != nil {
-				f.log.Warn("failed to get balance of account and skipped fetching for this acc", "account", account.Address, "err", err)
+				log.Logger.Warn("failed to get balance of account and skipped fetching for this acc", "account", account.Address, "err", err)
 				continue
 			}
 

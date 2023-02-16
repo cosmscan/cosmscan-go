@@ -2,12 +2,13 @@ package indexer
 
 import (
 	"context"
-	"cosmscan-go/client"
 	"cosmscan-go/config"
 	"cosmscan-go/db"
 	"cosmscan-go/db/psqldb"
-	"cosmscan-go/indexer/fetcher"
-	"cosmscan-go/indexer/schema"
+	"cosmscan-go/internal/client"
+	fetcher2 "cosmscan-go/modules/indexer/fetcher"
+	schema2 "cosmscan-go/modules/indexer/schema"
+	"cosmscan-go/pkg/log"
 	"errors"
 	"sync"
 
@@ -15,13 +16,11 @@ import (
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 
 	"github.com/jackc/pgx/v5"
-	"go.uber.org/zap"
 )
 
 type Indexer struct {
 	ctx        context.Context
 	cancelFunc context.CancelFunc
-	log        *zap.SugaredLogger
 	cfg        *config.IndexerConfig
 	cli        *client.Client
 	storage    db.DB
@@ -51,7 +50,6 @@ func NewIndexer(cfg *config.IndexerConfig) (*Indexer, error) {
 	return &Indexer{
 		ctx:        ctx,
 		cancelFunc: cancel,
-		log:        zap.S(),
 		cfg:        cfg,
 		cli:        cli,
 		storage:    storage,
@@ -60,7 +58,7 @@ func NewIndexer(cfg *config.IndexerConfig) (*Indexer, error) {
 
 func (i *Indexer) Run() error {
 	wg := sync.WaitGroup{}
-	i.log.Info("preparing to start indexing")
+	log.Logger.Info("preparing to start indexing")
 
 	chainId := i.loadOrStoreChainId()
 
@@ -70,13 +68,13 @@ func (i *Indexer) Run() error {
 		return err
 	}
 
-	blockFetcher := fetcher.NewBlockFetcher(i.cli, i.storage, current)
+	blockFetcher := fetcher2.NewBlockFetcher(i.cli, i.storage, current)
 	blockCh, err := blockFetcher.Subscribe()
 	if err != nil {
 		return err
 	}
 
-	accountFetcher := fetcher.NewAccountBalanceFetcher(i.cli)
+	accountFetcher := fetcher2.NewAccountBalanceFetcher(i.cli)
 	accReqCh, accResCh, err := accountFetcher.Subscribe()
 	if err != nil {
 		return err
@@ -88,9 +86,9 @@ func (i *Indexer) Run() error {
 		defer i.Close()
 		defer wg.Done()
 
-		i.log.Info("started block fetcher")
+		log.Logger.Info("started block fetcher")
 		if err := blockFetcher.Run(); err != nil {
-			i.log.Fatalw("failed to run block fetcher", "err", err)
+			log.Logger.Fatalw("failed to run block fetcher", "err", err)
 		}
 	}()
 
@@ -99,7 +97,7 @@ func (i *Indexer) Run() error {
 		defer i.Close()
 		defer wg.Done()
 
-		i.log.Info("started account fetcher")
+		log.Logger.Info("started account fetcher")
 		accountFetcher.Run()
 	}()
 
@@ -108,13 +106,13 @@ func (i *Indexer) Run() error {
 		defer i.Close()
 		defer wg.Done()
 
-		i.log.Info("started committer")
+		log.Logger.Info("started committer")
 		i.startCommitter(i.ctx, chainId, blockCh, accReqCh, accResCh)
 	}()
 
 	select {
 	case <-i.ctx.Done():
-		i.log.Info("indexer is stopped")
+		log.Logger.Info("indexer is stopped")
 		blockFetcher.Close()
 	}
 
@@ -137,9 +135,9 @@ func (i *Indexer) pickCurrentBlock() (db.BlockHeight, error) {
 	return block.Height + 1, nil
 }
 
-func (i *Indexer) startCommitter(ctx context.Context, chainId int64, blockCh <-chan *fetcher.FetchedBlock, accReqCh chan<- *schema.Account, accResCh <-chan *schema.AccountBalance) {
-	commitCh := make(chan *schema.FullBlock, 10)
-	accCommitCh := make(chan *schema.AccountBalance, 10)
+func (i *Indexer) startCommitter(ctx context.Context, chainId int64, blockCh <-chan *fetcher2.FetchedBlock, accReqCh chan<- *schema2.Account, accResCh <-chan *schema2.AccountBalance) {
+	commitCh := make(chan *schema2.FullBlock, 10)
+	accCommitCh := make(chan *schema2.AccountBalance, 10)
 
 	// run committer
 	committer := NewCommitter(i.storage, chainId)
@@ -159,16 +157,16 @@ func (i *Indexer) startCommitter(ctx context.Context, chainId int64, blockCh <-c
 				cosmTx = append(cosmTx, tx.CosmosQueryResult)
 			}
 
-			fullBlock, err := schema.NewFullBlock(fetchedBlock.Block, abciTx, cosmTx)
+			fullBlock, err := schema2.NewFullBlock(fetchedBlock.Block, abciTx, cosmTx)
 			if err != nil {
-				i.log.Panicw("unexpectedly failed to create full block", "err", err)
+				log.Logger.Panicw("unexpectedly failed to create full block", "err", err)
 			}
 
 			commitCh <- fullBlock
 
 			// extract account from full block and send to the channel
-			go func(fb *schema.FullBlock) {
-				accounts := schema.AccountsFromFullBlock(fb)
+			go func(fb *schema2.FullBlock) {
+				accounts := schema2.AccountsFromFullBlock(fb)
 				for _, acc := range accounts {
 					accReqCh <- acc
 				}
@@ -188,7 +186,7 @@ func (i *Indexer) loadOrStoreChainId() int64 {
 	}
 
 	if err != db.ErrNotFound {
-		i.log.Fatalw("failed to find chain with unknown reason", "err", err)
+		log.Logger.Fatalw("failed to find chain with unknown reason", "err", err)
 		return 0
 	} else {
 		insertedId, err := i.storage.InsertChain(context.Background(), &db.Chain{
@@ -196,7 +194,7 @@ func (i *Indexer) loadOrStoreChainId() int64 {
 			ChainName: i.cfg.Chain.Name,
 		})
 		if err != nil {
-			i.log.Fatalw("failed to create a new chain", "err", err)
+			log.Logger.Fatalw("failed to create a new chain", "err", err)
 		}
 		return insertedId
 	}

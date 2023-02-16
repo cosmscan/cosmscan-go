@@ -3,15 +3,13 @@ package indexer
 import (
 	"context"
 	"cosmscan-go/db"
-	"cosmscan-go/indexer/schema"
+	schema2 "cosmscan-go/modules/indexer/schema"
+	"cosmscan-go/pkg/log"
 	"fmt"
 	"time"
-
-	"go.uber.org/zap"
 )
 
 type Committer struct {
-	log        *zap.SugaredLogger
 	ctx        context.Context
 	cancelFunc context.CancelFunc
 	chainId    int64
@@ -22,7 +20,6 @@ func NewCommitter(storage db.DB, chainId int64) *Committer {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &Committer{
-		log:        zap.S().Named("committer"),
 		ctx:        ctx,
 		cancelFunc: cancel,
 		chainId:    chainId,
@@ -30,7 +27,7 @@ func NewCommitter(storage db.DB, chainId int64) *Committer {
 	}
 }
 
-func (c *Committer) Run(blockCh chan *schema.FullBlock, accountCh chan *schema.AccountBalance) {
+func (c *Committer) Run(blockCh chan *schema2.FullBlock, accountCh chan *schema2.AccountBalance) {
 	type blockStat struct {
 		proceeded int
 		start     db.BlockHeight
@@ -54,10 +51,10 @@ func (c *Committer) Run(blockCh chan *schema.FullBlock, accountCh chan *schema.A
 	for {
 		select {
 		case <-c.ctx.Done():
-			c.log.Info("committer is shutting down")
+			log.Logger.Info("committer is shutting down")
 			return
 		case tick := <-ticker.C:
-			c.log.Infow("Number of data has been committed",
+			log.Logger.Infow("Number of data has been committed",
 				"at", tick,
 				"blocks", stats.block.proceeded,
 				"block_start", stats.block.start,
@@ -68,9 +65,9 @@ func (c *Committer) Run(blockCh chan *schema.FullBlock, accountCh chan *schema.A
 		case block := <-blockCh:
 			if err := c.commitBlock(block); err != nil {
 				// sometimes database is temporarily unavailable, in the future, we need to retry
-				c.log.Fatalw("failed to commit block, this is unexpected behavior", "err", err)
+				log.Logger.Fatalw("failed to commit block, this is unexpected behavior", "err", err)
 			}
-			c.log.Debugw("new block committed", "height", block.Block.Height)
+			log.Logger.Debugw("new block committed", "height", block.Block.Height)
 
 			if stats.block.proceeded == 0 {
 				stats.block.start = block.Block.Height
@@ -83,7 +80,7 @@ func (c *Committer) Run(blockCh chan *schema.FullBlock, accountCh chan *schema.A
 
 			got, err := c.storage.FindAccountByAddress(c.ctx, 1, account.Account.Address)
 			if err != nil && err != db.ErrNotFound {
-				c.log.Fatalw("failed to check account existence", "err", err)
+				log.Logger.Fatalw("failed to check account existence", "err", err)
 			}
 
 			if err == db.ErrNotFound {
@@ -92,7 +89,7 @@ func (c *Committer) Run(blockCh chan *schema.FullBlock, accountCh chan *schema.A
 					Address: account.Account.Address,
 				})
 				if err != nil {
-					c.log.Warn("inserting account failed with", "err", err, "account", account.Account.Address)
+					log.Logger.Warn("inserting account failed with", "err", err, "account", account.Account.Address)
 					continue
 				}
 			} else {
@@ -102,7 +99,7 @@ func (c *Committer) Run(blockCh chan *schema.FullBlock, accountCh chan *schema.A
 			for _, b := range account.Balance {
 				amount := b.Amount.Uint64()
 				if err := c.storage.UpdateAccountBalance(c.ctx, accountId, b.Denom, amount); err != nil {
-					c.log.Warn("updating account balance failed with",
+					log.Logger.Warn("updating account balance failed with",
 						"err", err,
 						"accountId", accountId,
 						"denom", b.Denom,
@@ -120,7 +117,7 @@ func (c *Committer) Close() {
 	c.cancelFunc()
 }
 
-func (c *Committer) commitBlock(fullBlock *schema.FullBlock) error {
+func (c *Committer) commitBlock(fullBlock *schema2.FullBlock) error {
 	if err := c.storage.WithTransaction(c.ctx, func(dbTx db.DB) error {
 		fullBlock.Block.ChainId = c.chainId
 		if _, err := dbTx.InsertBlock(c.ctx, fullBlock.Block); err != nil {
