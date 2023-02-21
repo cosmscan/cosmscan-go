@@ -1,58 +1,47 @@
 package db
 
 import (
-	"context"
 	"fmt"
 
-	sq "github.com/Masterminds/squirrel"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
-var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
-
-// DB means Relational Database
 type DB struct {
-	db *pgxpool.Pool
+	db *gorm.DB
 }
 
-func NewDB(config *Config) (*DB, error) {
-	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		config.Host, config.Port, config.User, config.Password, config.Database)
+// New open database connection with given config
+func New(cfg Config) (*DB, error) {
+	var db *gorm.DB
+	var err error
 
-	pool, err := pgxpool.New(context.Background(), dsn)
+	if cfg.UseInMemory {
+		db, err = openSqlite()
+	} else {
+		db, err = openPostgres(cfg)
+	}
+
 	if err != nil {
-		return nil, fmt.Errorf("failed to create a `pgxpool` instance: %v", err)
+		return nil, err
 	}
 
-	return &DB{
-		db: pool,
-	}, nil
+	return &DB{db: db}, nil
 }
 
-func (p *DB) WithTransaction(ctx context.Context, fn func(tx pgx.Tx) error) error {
-	tx, err := p.db.BeginTx(ctx, pgx.TxOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to begin transction: %v", err)
-	}
-
-	if err := fn(tx); err != nil {
-		rollbackErr := tx.Rollback(ctx)
-		if rollbackErr != nil {
-			return fmt.Errorf("failed to rollback transaction: %v", rollbackErr)
-		}
-
-		return fmt.Errorf("failed to execute transaction: %v, it has been rolled back", err)
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		return fmt.Errorf("failed to commit transaction: %v", err)
-	}
-
-	return nil
+func openSqlite() (*gorm.DB, error) {
+	dsn := "file:memory:"
+	return gorm.Open(sqlite.Open(dsn), &gorm.Config{})
 }
 
-func (p *DB) Close() error {
-	p.db.Close()
-	return nil
+func openPostgres(cfg Config) (*gorm.DB, error) {
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d", cfg.Host, cfg.User, cfg.Password, cfg.Database, cfg.Port)
+	return gorm.Open(postgres.Open(dsn), &gorm.Config{
+		DisableForeignKeyConstraintWhenMigrating: true,
+	})
+}
+
+func (d *DB) Instance() *gorm.DB {
+	return d.db
 }

@@ -2,10 +2,8 @@ package indexer
 
 import (
 	"context"
-	"cosmscan-go/config"
-	"cosmscan-go/db"
-	"cosmscan-go/db/psqldb"
 	"cosmscan-go/internal/client"
+	"cosmscan-go/internal/db"
 	fetcher2 "cosmscan-go/modules/indexer/fetcher"
 	schema2 "cosmscan-go/modules/indexer/schema"
 	"cosmscan-go/pkg/log"
@@ -21,23 +19,12 @@ import (
 type Indexer struct {
 	ctx        context.Context
 	cancelFunc context.CancelFunc
-	cfg        *config.IndexerConfig
+	cfg        *Config
 	cli        *client.Client
-	storage    db.DB
+	storage    *db.DB
 }
 
-func NewIndexer(cfg *config.IndexerConfig) (*Indexer, error) {
-	storage, err := psqldb.NewPsqlDB(&psqldb.Config{
-		Host:     cfg.DB.Host,
-		Port:     cfg.DB.Port,
-		User:     cfg.DB.User,
-		Password: cfg.DB.Password,
-		Database: cfg.DB.Database,
-	})
-	if err != nil {
-		return nil, err
-	}
-
+func NewIndexer(cfg *Config, storage *db.DB) (*Indexer, error) {
 	cli, err := client.NewClient(&client.Config{
 		RPCEndpoint: cfg.RPCEndpoint,
 	})

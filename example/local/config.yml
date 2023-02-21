@@ -1,0 +1,28 @@
+server:
+  http_listen_address: localhost
+  http_server_read_timeout: 30s
+  http_server_write_timeout: 30s
+  http_server_idle_timeout: 2m0s
+  http_listen_port: 8080
+  http_listen_conn_limit: 100
+  grpc_listen_address: localhost
+  grpc_listen_port: 9090
+  grpc_listen_conn_limit: 100
+  graceful_shutdown_timeout: 30s
+  register_instrumentation: true
+  log_format: logfmt
+  log_level: info
+
+database:
+  use_in_memory: false
+  host: localhost
+  port: 5432
+  user: cosmscan
+  password: cosmscan
+  database: cosmscan
+
+indexer:
+  rpc_endpoint: http://localhost:26657/
+  start_block: 1
+  id: cosmos
+  name: cosmos

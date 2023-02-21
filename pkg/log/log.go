@@ -19,5 +19,6 @@ func init() {
 		}
 		defer logger.Sync()
 		zap.ReplaceGlobals(logger)
+		Logger = logger.Sugar()
 	})
 }
