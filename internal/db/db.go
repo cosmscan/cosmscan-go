@@ -17,10 +17,13 @@ func New(cfg Config) (*DB, error) {
 	var db *gorm.DB
 	var err error
 
-	if cfg.UseInMemory {
+	switch cfg.Driver {
+	case "sqlite":
 		db, err = openSqlite()
-	} else {
+	case "postgresql":
 		db, err = openPostgres(cfg)
+	default:
+		return nil, fmt.Errorf("unsupported driver: %s", cfg.Driver)
 	}
 
 	if err != nil {

@@ -11,10 +11,4 @@ build:
 test:
 	@go test -mod=readonly $(PACKAGES_UNIT)
 
-run-indexer:
-	$(GORUN) ./cmd/cosmscan/main.go --config-file ./config.yml
-
-run-server:
-	$(GORUN) ./cmd/server/main.go --config-file ./config-server.yml
-
-.PHONEY: build test run-indexer run-server
+.PHONEY: build test
