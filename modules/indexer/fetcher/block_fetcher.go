@@ -2,8 +2,11 @@ package fetcher
 
 import (
 	"context"
-	"cosmscan-go/db"
 	client2 "cosmscan-go/internal/client"
+	"cosmscan-go/internal/db"
+	"cosmscan-go/internal/model"
+	"cosmscan-go/internal/querier/blockquery"
+	"cosmscan-go/internal/querier/txquery"
 	"cosmscan-go/pkg/log"
 	"errors"
 	"sync"
@@ -24,8 +27,8 @@ type FetchedBlock struct {
 
 type BlockFetcher struct {
 	cli        *client2.Client
-	storage    db.DB
-	startBlock db.BlockHeight
+	storage    *db.DB
+	startBlock model.BlockHeight
 
 	ctx        context.Context
 	cancelFunc context.CancelFunc
@@ -34,7 +37,7 @@ type BlockFetcher struct {
 	channel    chan *FetchedBlock
 }
 
-func NewBlockFetcher(cli *client2.Client, storage db.DB, startBlock db.BlockHeight) *BlockFetcher {
+func NewBlockFetcher(cli *client2.Client, storage *db.DB, startBlock model.BlockHeight) *BlockFetcher {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &BlockFetcher{
@@ -115,20 +118,20 @@ func (f *BlockFetcher) run() error {
 	}
 }
 
-func (f *BlockFetcher) fetchBlock(height db.BlockHeight) (ret *FetchedBlock, retry bool, err error) {
+func (f *BlockFetcher) fetchBlock(height model.BlockHeight) (ret *FetchedBlock, retry bool, err error) {
 	var result FetchedBlock
 
-	latestHeight, err := f.cli.LatestBlockNumber(f.ctx)
+	latestHeight, err := blockquery.LatestBlockNumber(f.ctx, f.cli)
 	if err != nil {
 		return nil, true, err
 	}
 
-	latest := db.BlockHeight(latestHeight)
+	latest := model.BlockHeight(latestHeight)
 	if latest < height {
 		return nil, true, nil
 	}
 
-	block, err := f.cli.Block(f.ctx, int64(height))
+	block, err := blockquery.Block(f.ctx, f.cli, int64(height))
 	if err != nil {
 		return nil, false, err
 	}
@@ -140,12 +143,12 @@ func (f *BlockFetcher) fetchBlock(height db.BlockHeight) (ret *FetchedBlock, ret
 	}, 0)
 
 	for _, tx := range block.Block.Txs {
-		abciQueryResult, err := f.cli.ABCITransactionByHash(f.ctx, tx.Hash())
+		abciQueryResult, err := txquery.ABCITransactionByHash(f.ctx, f.cli, tx.Hash())
 		if err != nil {
 			return nil, false, err
 		}
 
-		cosmosQueryResult, err := client2.TransactionByHash(f.ctx, abciQueryResult.Hash.String(), f.cli)
+		cosmosQueryResult, err := txquery.TransactionByHash(f.ctx, f.cli, abciQueryResult.Hash.String())
 		if err != nil {
 			return nil, false, err
 		}

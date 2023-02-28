@@ -4,16 +4,14 @@ import (
 	"context"
 	"cosmscan-go/internal/client"
 	"cosmscan-go/internal/db"
+	"cosmscan-go/internal/model"
 	fetcher2 "cosmscan-go/modules/indexer/fetcher"
 	schema2 "cosmscan-go/modules/indexer/schema"
 	"cosmscan-go/pkg/log"
-	"errors"
 	"sync"
 
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
-
-	"github.com/jackc/pgx/v5"
 )
 
 type Indexer struct {
@@ -111,15 +109,8 @@ func (i *Indexer) Close() {
 	i.cancelFunc()
 }
 
-func (i *Indexer) pickCurrentBlock() (db.BlockHeight, error) {
-	block, err := i.storage.LatestBlock(context.Background())
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return db.BlockHeight(i.cfg.StartBlock), nil
-		}
-		return 0, err
-	}
-	return block.Height + 1, nil
+func (i *Indexer) pickCurrentBlock() (model.BlockHeight, error) {
+	return -1, nil
 }
 
 func (i *Indexer) startCommitter(ctx context.Context, chainId int64, blockCh <-chan *fetcher2.FetchedBlock, accReqCh chan<- *schema2.Account, accResCh <-chan *schema2.AccountBalance) {
@@ -167,22 +158,6 @@ func (i *Indexer) startCommitter(ctx context.Context, chainId int64, blockCh <-c
 // loadOrStoreChainId load or store the chain information from configs.
 // it stores the new chain if it doesn't exist with given name.
 func (i *Indexer) loadOrStoreChainId() int64 {
-	chain, err := i.storage.FindChainByName(context.Background(), i.cfg.Chain.Name)
-	if err == nil {
-		return chain.ID
-	}
-
-	if err != db.ErrNotFound {
-		log.Logger.Fatalw("failed to find chain with unknown reason", "err", err)
-		return 0
-	} else {
-		insertedId, err := i.storage.InsertChain(context.Background(), &db.Chain{
-			ChainId:   i.cfg.Chain.ID,
-			ChainName: i.cfg.Chain.Name,
-		})
-		if err != nil {
-			log.Logger.Fatalw("failed to create a new chain", "err", err)
-		}
-		return insertedId
-	}
+	// load or store chain id
+	return 1
 }

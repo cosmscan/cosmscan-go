@@ -3,6 +3,7 @@ package fetcher
 import (
 	"context"
 	client2 "cosmscan-go/internal/client"
+	"cosmscan-go/internal/querier/accountquery"
 	"cosmscan-go/modules/indexer/schema"
 	"cosmscan-go/pkg/log"
 	"errors"
@@ -61,7 +62,7 @@ func (f *AccountBalanceFetcher) run() {
 			log.Logger.Info("the system is about to stop")
 			return
 		case account := <-f.reqC:
-			res, err := client2.BalanceOf(f.ctx, f.cli, account.Address)
+			res, err := accountquery.BalanceOf(f.ctx, f.cli, account.Address)
 			if err != nil {
 				log.Logger.Warn("failed to get balance of account and skipped fetching for this acc", "account", account.Address, "err", err)
 				continue
