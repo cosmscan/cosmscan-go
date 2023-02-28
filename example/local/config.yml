@@ -1,3 +1,9 @@
+target: all
+
+logging:
+  encoding: console
+  log_level: info
+
 server:
   http_listen_address: localhost
   http_server_read_timeout: 30s

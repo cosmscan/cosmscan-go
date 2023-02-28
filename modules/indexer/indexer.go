@@ -110,7 +110,7 @@ func (i *Indexer) Close() {
 }
 
 func (i *Indexer) pickCurrentBlock() (model.BlockHeight, error) {
-	return -1, nil
+	return model.BlockHeight(1), nil
 }
 
 func (i *Indexer) startCommitter(ctx context.Context, chainId int64, blockCh <-chan *fetcher2.FetchedBlock, accReqCh chan<- *schema2.Account, accResCh <-chan *schema2.AccountBalance) {

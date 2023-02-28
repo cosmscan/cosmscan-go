@@ -3,6 +3,7 @@ package app
 import (
 	"cosmscan-go/internal/db"
 	"cosmscan-go/modules/indexer"
+	"cosmscan-go/pkg/log"
 	"flag"
 	"fmt"
 
@@ -10,6 +11,10 @@ import (
 )
 
 type Config struct {
+	// Target is the target to run.
+	Target string `yaml:"target"`
+
+	Logging  log.Config     `yaml:"logging,omitempty"`
 	Server   server.Config  `yaml:"server,omitempty"`
 	Database db.Config      `yaml:"database,omitempty"`
 	Indexer  indexer.Config `yaml:"indexer,omitempty"`
