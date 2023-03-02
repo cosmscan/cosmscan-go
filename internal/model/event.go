@@ -8,12 +8,17 @@ import (
 type Event struct {
 	gorm.Model
 
-	ChainId int64       `json:"chainId"`
-	TxId    int         `json:"txId"`
+	ChainId uint        `json:"chainId"`
+	TxId    uint        `json:"txId"`
 	Height  BlockHeight `json:"height"`
 	Seq     uint32      `json:"seq"`
 	Type    string      `json:"type"`
 	Key     string      `json:"key"`
 	Value   string      `json:"value"`
 	Indexed bool        `json:"indexed"`
+}
+
+// Create a new event
+func (e *Event) Create(db *gorm.DB) error {
+	return db.Model(&e).Create(&e).Error
 }

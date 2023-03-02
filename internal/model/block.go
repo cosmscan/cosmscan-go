@@ -40,5 +40,7 @@ func (b *Block) Create(db *gorm.DB) error {
 
 // FindByHash find a block by hash
 func (b *Block) FindByHash(db *gorm.DB, hash string) error {
-	return db.Model(&b).Where("hash = ?", hash).First(&b).Error
+	return db.Model(&b).Where(Block{
+		Hash: hash,
+	}).First(&b).Error
 }

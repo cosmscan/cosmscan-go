@@ -32,4 +32,7 @@ build:
 test:
 	@go test -mod=readonly $(PACKAGES_UNIT)
 
+test-with-cover:
+	@go test -race -timeout 30m -count=1 -cover $(PACKAGES_UNIT)
+
 .PHONEY: build test
