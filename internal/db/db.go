@@ -34,7 +34,7 @@ func New(cfg Config) (*DB, error) {
 }
 
 func openSqlite() (*gorm.DB, error) {
-	dsn := "file:memory:"
+	dsn := "file::memory:"
 	return gorm.Open(sqlite.Open(dsn), &gorm.Config{})
 }
 
@@ -47,4 +47,8 @@ func openPostgres(cfg Config) (*gorm.DB, error) {
 
 func (d *DB) Instance() *gorm.DB {
 	return d.db
+}
+
+func (d *DB) AutoMigrate(dst []interface{}) error {
+	return d.db.AutoMigrate(dst...)
 }
