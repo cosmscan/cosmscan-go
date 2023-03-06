@@ -1,8 +1,6 @@
 package model
 
 import (
-	"errors"
-
 	"gorm.io/gorm"
 )
 
@@ -16,19 +14,7 @@ type Account struct {
 
 // Create a new account
 func (a *Account) Create(db *gorm.DB) error {
-	return db.Transaction(func(tx *gorm.DB) error {
-		got := &Account{}
-		err := got.FindBy(tx, a.Address, a.ChainId)
-		if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
-			return err
-		}
-
-		if err == nil {
-			return gorm.ErrRegistered
-		}
-
-		return tx.Model(&a).Create(&a).Error
-	})
+	return db.Model(&a).Create(&a).Error
 }
 
 // FindBy address and chainId

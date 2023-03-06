@@ -28,14 +28,7 @@ type Block struct {
 
 // Create a new block
 func (b *Block) Create(db *gorm.DB) error {
-	return db.Transaction(func(tx *gorm.DB) error {
-		c := &Chain{}
-		if err := c.FindByID(tx, b.ChainID); err != nil {
-			return err
-		}
-
-		return tx.Model(&b).Create(&b).Error
-	})
+	return db.Model(&b).Create(&b).Error
 }
 
 // FindByHash find a block by hash
