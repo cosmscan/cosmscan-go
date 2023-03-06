@@ -25,7 +25,7 @@ func NewFullBlock(block *coretypes.ResultBlock, abciTx []*coretypes.ResultTx, co
 
 	// fill block
 	b := &model.Block{
-		Height:             model.BlockHeight(block.Block.Height),
+		Height:             block.Block.Height,
 		Hash:               block.Block.Hash().String(),
 		ProposerAddress:    block.Block.ProposerAddress.String(),
 		LastCommitHash:     block.Block.LastCommitHash.String(),
@@ -54,7 +54,7 @@ func NewFullBlock(block *coretypes.ResultBlock, abciTx []*coretypes.ResultTx, co
 		// fill transaction
 		fullTx.Tx = &model.Transaction{
 			Hash:      tx.Hash.String(),
-			Height:    model.BlockHeight(block.Block.Height),
+			Height:    block.Block.Height,
 			Seq:       int(tx.Index),
 			Code:      int(res.TxResponse.Code),
 			CodeSpace: res.TxResponse.Codespace,
@@ -72,7 +72,7 @@ func NewFullBlock(block *coretypes.ResultBlock, abciTx []*coretypes.ResultTx, co
 			for _, event := range txLog.Events {
 				for _, attr := range event.Attributes {
 					fullTx.Events = append(fullTx.Events, &model.Event{
-						Height:  model.BlockHeight(block.Block.Height),
+						Height:  block.Block.Height,
 						Seq:     txLog.MsgIndex,
 						Type:    event.Type,
 						Key:     attr.Key,

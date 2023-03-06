@@ -10,20 +10,20 @@ import (
 type Block struct {
 	gorm.Model
 
-	ChainID            uint        `json:"chainId"`
-	Height             BlockHeight `json:"height"`
-	Hash               string      `json:"hash"`
-	ParentHash         string      `json:"parentHash"`
-	ProposerAddress    string      `json:"proposerAddress"`
-	LastCommitHash     string      `json:"lastCommitHash"`
-	DataHash           string      `json:"dataHash"`
-	ValidatorsHash     string      `json:"validatorsHash"`
-	NextValidatorsHash string      `json:"nextValidatorsHash"`
-	ConsensusHash      string      `json:"consensusHash"`
-	AppHash            string      `json:"appHash"`
-	LastResultHash     string      `json:"lastResultHash"`
-	EvidenceHash       string      `json:"evidenceHash"`
-	BlockTime          time.Time   `json:"blockTime"`
+	ChainID            uint      `json:"chainId"`
+	Height             uint32    `json:"height"`
+	Hash               string    `json:"hash"`
+	ParentHash         string    `json:"parentHash"`
+	ProposerAddress    string    `json:"proposerAddress"`
+	LastCommitHash     string    `json:"lastCommitHash"`
+	DataHash           string    `json:"dataHash"`
+	ValidatorsHash     string    `json:"validatorsHash"`
+	NextValidatorsHash string    `json:"nextValidatorsHash"`
+	ConsensusHash      string    `json:"consensusHash"`
+	AppHash            string    `json:"appHash"`
+	LastResultHash     string    `json:"lastResultHash"`
+	EvidenceHash       string    `json:"evidenceHash"`
+	BlockTime          time.Time `json:"blockTime"`
 }
 
 // Create a new block

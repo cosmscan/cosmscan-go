@@ -11,7 +11,7 @@ import (
 func newTestBlock() *Block {
 	return &Block{
 		ChainID:            rand.Uint(),
-		Height:             BlockHeight(rand.Intn(10)),
+		Height:             rand.Uint32(),
 		Hash:               rand.Str(10),
 		ParentHash:         rand.Str(10),
 		ProposerAddress:    rand.Str(10),
