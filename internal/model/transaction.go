@@ -1,6 +1,7 @@
 package model
 
 import (
+	"gorm.io/datatypes"
 	"time"
 
 	"gorm.io/gorm"
@@ -10,19 +11,19 @@ import (
 type Transaction struct {
 	gorm.Model
 
-	ChainId   uint      `json:"chainId"`
-	Hash      string    `json:"hash"`
-	Height    uint32    `json:"height"`
-	Code      int       `json:"code"`
-	CodeSpace string    `json:"codeSpace"`
-	TxData    string    `json:"txData"`
-	RawLog    string    `json:"rawLog"`
-	Info      string    `json:"info"`
-	Memo      string    `json:"memo"`
-	Seq       int       `json:"seq"`
-	GasWanted uint64    `json:"gasWanted"`
-	GasUsed   uint64    `json:"gasUsed"`
-	IssuedAt  time.Time `json:"issuedAt"`
+	ChainId   uint           `json:"chainId"`
+	Hash      string         `json:"hash"`
+	Height    uint32         `json:"height"`
+	Code      int            `json:"code"`
+	CodeSpace string         `json:"codeSpace"`
+	TxData    string         `json:"txData"`
+	RawLog    datatypes.JSON `json:"rawLog"`
+	Info      string         `json:"info"`
+	Memo      string         `json:"memo"`
+	Seq       int            `json:"seq"`
+	GasWanted uint64         `json:"gasWanted"`
+	GasUsed   uint64         `json:"gasUsed"`
+	IssuedAt  time.Time      `json:"issuedAt"`
 }
 
 // Create a new transaction
