@@ -10,19 +10,19 @@ import (
 type Transaction struct {
 	gorm.Model
 
-	ChainId   uint        `json:"chainId"`
-	Hash      string      `json:"hash"`
-	Height    BlockHeight `json:"height"`
-	Code      int         `json:"code"`
-	CodeSpace string      `json:"codeSpace"`
-	TxData    string      `json:"txData"`
-	RawLog    string      `json:"rawLog"`
-	Info      string      `json:"info"`
-	Memo      string      `json:"memo"`
-	Seq       int         `json:"seq"`
-	GasWanted uint64      `json:"gasWanted"`
-	GasUsed   uint64      `json:"gasUsed"`
-	IssuedAt  time.Time   `json:"issuedAt"`
+	ChainId   uint      `json:"chainId"`
+	Hash      string    `json:"hash"`
+	Height    uint32    `json:"height"`
+	Code      int       `json:"code"`
+	CodeSpace string    `json:"codeSpace"`
+	TxData    string    `json:"txData"`
+	RawLog    string    `json:"rawLog"`
+	Info      string    `json:"info"`
+	Memo      string    `json:"memo"`
+	Seq       int       `json:"seq"`
+	GasWanted uint64    `json:"gasWanted"`
+	GasUsed   uint64    `json:"gasUsed"`
+	IssuedAt  time.Time `json:"issuedAt"`
 }
 
 // Create a new transaction
@@ -39,7 +39,7 @@ func (t *Transaction) FindByHash(db *gorm.DB, chainId uint, hash string) error {
 }
 
 // FindAllByHeight find a transactions by height
-func (t *Transaction) FindAllByHeight(db *gorm.DB, chainId uint, height BlockHeight) ([]*Transaction, error) {
+func (t *Transaction) FindAllByHeight(db *gorm.DB, chainId uint, height uint32) ([]*Transaction, error) {
 	var transactions []*Transaction
 	ret := db.Model(&t).Where(Transaction{
 		ChainId: chainId,

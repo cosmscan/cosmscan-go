@@ -4,7 +4,6 @@ import (
 	"context"
 	client2 "cosmscan-go/internal/client"
 	"cosmscan-go/internal/db"
-	"cosmscan-go/internal/model"
 	"cosmscan-go/internal/querier/blockquery"
 	"cosmscan-go/internal/querier/txquery"
 	"cosmscan-go/pkg/log"
@@ -28,7 +27,7 @@ type FetchedBlock struct {
 type BlockFetcher struct {
 	cli        *client2.Client
 	storage    *db.DB
-	startBlock model.BlockHeight
+	startBlock uint32
 
 	ctx        context.Context
 	cancelFunc context.CancelFunc
@@ -37,7 +36,7 @@ type BlockFetcher struct {
 	channel    chan *FetchedBlock
 }
 
-func NewBlockFetcher(cli *client2.Client, storage *db.DB, startBlock model.BlockHeight) *BlockFetcher {
+func NewBlockFetcher(cli *client2.Client, storage *db.DB, startBlock uint32) *BlockFetcher {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &BlockFetcher{
@@ -118,7 +117,7 @@ func (f *BlockFetcher) run() error {
 	}
 }
 
-func (f *BlockFetcher) fetchBlock(height model.BlockHeight) (ret *FetchedBlock, retry bool, err error) {
+func (f *BlockFetcher) fetchBlock(height uint32) (ret *FetchedBlock, retry bool, err error) {
 	var result FetchedBlock
 
 	latestHeight, err := blockquery.LatestBlockNumber(f.ctx, f.cli)
@@ -126,7 +125,7 @@ func (f *BlockFetcher) fetchBlock(height model.BlockHeight) (ret *FetchedBlock, 
 		return nil, true, err
 	}
 
-	latest := model.BlockHeight(latestHeight)
+	latest := uint32(latestHeight)
 	if latest < height {
 		return nil, true, nil
 	}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"cosmscan-go/internal/client"
 	"cosmscan-go/internal/db"
-	"cosmscan-go/internal/model"
 	fetcher2 "cosmscan-go/modules/indexer/fetcher"
 	schema2 "cosmscan-go/modules/indexer/schema"
 	"cosmscan-go/pkg/log"
@@ -109,8 +108,8 @@ func (i *Indexer) Close() {
 	i.cancelFunc()
 }
 
-func (i *Indexer) pickCurrentBlock() (model.BlockHeight, error) {
-	return model.BlockHeight(1), nil
+func (i *Indexer) pickCurrentBlock() (uint32, error) {
+	return 1, nil
 }
 
 func (i *Indexer) startCommitter(ctx context.Context, chainId int64, blockCh <-chan *fetcher2.FetchedBlock, accReqCh chan<- *schema2.Account, accResCh <-chan *schema2.AccountBalance) {

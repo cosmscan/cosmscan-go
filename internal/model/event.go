@@ -8,14 +8,14 @@ import (
 type Event struct {
 	gorm.Model
 
-	ChainId uint        `json:"chainId"`
-	TxId    uint        `json:"txId"`
-	Height  BlockHeight `json:"height"`
-	Seq     uint32      `json:"seq"`
-	Type    string      `json:"type"`
-	Key     string      `json:"key"`
-	Value   string      `json:"value"`
-	Indexed bool        `json:"indexed"`
+	ChainId uint   `json:"chainId"`
+	TxId    uint   `json:"txId"`
+	Height  uint32 `json:"height"`
+	Seq     uint32 `json:"seq"`
+	Type    string `json:"type"`
+	Key     string `json:"key"`
+	Value   string `json:"value"`
+	Indexed bool   `json:"indexed"`
 }
 
 // Create a new event

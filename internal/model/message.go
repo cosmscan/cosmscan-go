@@ -9,8 +9,8 @@ import (
 type Message struct {
 	gorm.Model
 
-	TransactionId int            `json:"transactionId"`
-	Seq           int            `json:"seq"`
+	TransactionId uint           `json:"transactionId"`
+	Seq           uint           `json:"seq"`
 	RawData       datatypes.JSON `json:"rawData"` // RawData is the raw format of message, it's a json string
 }
 
@@ -18,7 +18,7 @@ func (m *Message) Create(db *gorm.DB) error {
 	return db.Model(&m).Create(&m).Error
 }
 
-func (m *Message) FindAllByTxId(db *gorm.DB, txId int) ([]*Message, error) {
+func (m *Message) FindAllByTxId(db *gorm.DB, txId uint) ([]*Message, error) {
 	var messages []*Message
 	ret := db.Model(&m).Where(Message{
 		TransactionId: txId,

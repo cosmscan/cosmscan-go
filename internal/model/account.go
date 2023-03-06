@@ -8,7 +8,7 @@ import (
 type Account struct {
 	gorm.Model
 
-	ChainId int64  `json:"chainId"`
+	ChainId uint   `json:"chainId"`
 	Address string `json:"address"`
 }
 
@@ -18,7 +18,7 @@ func (a *Account) Create(db *gorm.DB) error {
 }
 
 // FindBy address and chainId
-func (a *Account) FindBy(db *gorm.DB, address string, chainId int64) error {
+func (a *Account) FindBy(db *gorm.DB, address string, chainId uint) error {
 	return db.Model(&a).Where("address = ? and chain_id = ?", address, chainId).First(&a).Error
 }
 
