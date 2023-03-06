@@ -34,5 +34,9 @@ func (c *Chain) FindByChainID(db *gorm.DB, chainId string) error {
 // FindAll returns all registered chains
 func (c *Chain) FindAll(db *gorm.DB) ([]Chain, error) {
 	var chains []Chain
-	return chains, db.Find(&chains).Error
+	ret := db.Order("id asc").Find(&chains)
+	if ret.Error != nil {
+		return nil, ret.Error
+	}
+	return chains, nil
 }

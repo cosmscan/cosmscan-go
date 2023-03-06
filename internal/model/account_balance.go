@@ -15,13 +15,5 @@ type AccountBalance struct {
 
 // Create a new account balance
 func (a *AccountBalance) Create(db *gorm.DB) error {
-	acc := &Account{}
-
-	return db.Transaction(func(tx *gorm.DB) error {
-		if err := acc.FindByID(tx, a.AccountID); err != nil {
-			return err
-		}
-
-		return tx.Model(&a).Create(&a).Error
-	})
+	return db.Model(&a).Create(&a).Error
 }

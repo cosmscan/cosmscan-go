@@ -22,3 +22,17 @@ type Event struct {
 func (e *Event) Create(db *gorm.DB) error {
 	return db.Model(&e).Create(&e).Error
 }
+
+// FindAllByTxId find all events by tx id
+func (e *Event) FindAllByTxId(db *gorm.DB, txId uint) ([]*Event, error) {
+	var events []*Event
+	ret := db.Model(&e).Order("seq asc").Where(Event{
+		TxId: txId,
+	}).Find(&events)
+
+	if ret.Error != nil {
+		return nil, ret.Error
+	}
+
+	return events, nil
+}

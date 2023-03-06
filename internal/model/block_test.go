@@ -31,28 +31,12 @@ func TestBlockCreate(t *testing.T) {
 
 	block := newTestBlock()
 	err := block.Create(db)
-	require.Error(t, err)
-
-	chain := &Chain{
-		Model:     gorm.Model{ID: block.ChainID},
-		ChainId:   rand.Str(10),
-		ChainName: rand.Str(10),
-	}
-	require.NoError(t, chain.Create(db))
-
-	err = block.Create(db)
 	require.NoError(t, err)
 }
 
 func TestBlockFindByHash(t *testing.T) {
 	db := newMemoryDB(t)
 	block := newTestBlock()
-	chain := &Chain{
-		Model:     gorm.Model{ID: block.ChainID},
-		ChainId:   rand.Str(10),
-		ChainName: rand.Str(10),
-	}
-	require.NoError(t, chain.Create(db))
 
 	err := block.Create(db)
 	require.NoError(t, err)

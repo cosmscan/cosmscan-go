@@ -5,11 +5,13 @@ go 1.20
 require (
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/cosmos/cosmos-sdk v0.46.7
+	github.com/stretchr/testify v1.8.1
 	github.com/tendermint/tendermint v0.34.24
 	github.com/weaveworks/common v0.0.0-20230208133027-16871410fca4
 	go.uber.org/zap v1.24.0
 	google.golang.org/grpc v1.50.1
 	gopkg.in/yaml.v3 v3.0.1
+	gorm.io/datatypes v1.1.0
 	gorm.io/driver/postgres v1.4.8
 	gorm.io/driver/sqlite v1.4.4
 	gorm.io/gorm v1.24.2
@@ -48,6 +50,7 @@ require (
 	github.com/go-kit/kit v0.12.0 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
+	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/gogo/googleapis v1.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -109,7 +112,6 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.13.0 // indirect
-	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
 	github.com/tendermint/btcd v0.1.1 // indirect
@@ -137,6 +139,7 @@ require (
 	google.golang.org/protobuf v1.28.2-0.20220831092852-f930b1dc76e8 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gorm.io/driver/mysql v1.4.4 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
