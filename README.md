@@ -20,8 +20,8 @@ Cosmscan is here to solve this problem. 🚀🚀
 
 ## Test on the local machine
 ```shell
-$ cd ./example
-$ docker-compose up -d 
+$ cd ./example/docker
+$ docker-compose up -d
 ```
 
 ## Launch API Server
